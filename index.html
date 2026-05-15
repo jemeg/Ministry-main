@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const medic = localStorage.getItem('activeMedic');
+        const activeCode = localStorage.getItem('activeCode');
+        const discordId = localStorage.getItem('discordId');
+
+        // 🚫 إذا لم يكن هناك مستخدم مسجل دخول بأي نظام → العودة إلى login.html
+        if (!medic && (!activeCode || !discordId)) {
+            window.location.href = "login.html";
+        }
+    });
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جدول الإسعاف - وزارة الصحة</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        .table-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .custom-table td {
+            padding: 18px 45px;
+        }
+        .custom-table th {
+            padding: 10px 35px;
+        }
+        
+        /* تصميم الملف الشخصي */
+        .profile-avatar-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .profile-avatar {
+            transition: transform 0.3s ease;
+        }
+        
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+        
+        .password-change-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .bio-section {
+            background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #bbdefb;
+        }
+        
+        .additional-info {
+            background: linear-gradient(135deg, #e8f5e8 0%, #ffffff 100%);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #d4edda;
+        }
+        
+        /* تصميم بطاقات الملفات الشخصية */
+        .profile-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .profile-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.4) !important;
+        }
+        
+        .profile-card .rounded-circle {
+            transition: transform 0.3s ease;
+        }
+        
+        .profile-card:hover .rounded-circle {
+            transform: scale(1.1);
+        }
+        
+        /* نظام الإشعارات */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 300px;
+        }
+        
+        .notification-item {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%);
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.15);
+            animation: slideInRight 0.3s ease;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-item:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 6px 16px rgba(255, 193, 7, 0.25);
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #856404;
+            font-size: 14px;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .notification-close:hover {
+            background-color: #f8f9fa;
+            color: #dc3545;
+        }
+        
+        .notification-content {
+            color: #495057;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .notification-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #6c757d;
+        }
+        
+        .notification-time {
+            color: #856404;
+        }
+        
+        .notification-from {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+        }
+        
+        .notification-exit {
+            animation: fadeOut 0.3s ease forwards;
+        }
+        
+        /* تحسين الأزرار */
+        .btn-outline-success:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+        
+        .btn-outline-info:hover {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+            color: white;
+        }
+        
+        /* تأثيرات الحركة */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-body {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* تصميم بطاقات المتجر */
+        .design-card {
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .design-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+            border-color: #FFA500;
+        }
+
+        .design-preview {
+            width: 100%;
+            height: 150px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-preview::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+        }
+
+        .design-card:hover .design-preview::before {
+            animation: shine 0.5s ease;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .color-picker-container {
+            margin: 10px 0;
+        }
+
+        .color-picker {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .color-picker:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .price-badge {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .purchased-badge {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .equipped-badge {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .design-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .design-description {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .btn-purchase {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-purchase:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-equip {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-equip:hover {
+            background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-disabled {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+    </style>
+
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="header-section">
+            <div class="logo-container">
+                <div class="logo-shine"></div>
+                <img src="logo.png" alt="شعار وزارة الصحة" class="ministry-logo">
+            </div>
+            <div class="title-container">
+                <h1>
+                    <span class="title-highlight">جدول الإسعاف</span>
+                    <br>
+                    <span class="ministry-name">وزارة الصحة</span>
+                </h1>
+                <div class="employee-info mt-2">
+                    <span id="employeeName" class="fw-bold"></span>
+                    <span class="mx-2">|</span>
+                    <span id="employeeId"></span>
+                </div>
+            </div>
+            <div class="admin-controls">
+                <div class="ms-auto">
+                    <!-- زر الملف الشخصي -->
+                    <button class="btn btn-outline-success me-2" onclick="openProfileModal()" style="color: #28a745; border-color: #28a745;">
+                        <i class="fas fa-user-circle me-1"></i> الملف الشخصي
+                    </button>
+                    <!-- زر عرض ملفات المسعفين (لجميع المستخدمين) -->
+                    <button class="btn btn-outline-info me-2" id="viewMedicsProfilesBtn" onclick="openMedicsProfilesModal()" style="color: #17a2b8; border-color: #17a2b8;">
+                        <i class="fas fa-users me-1"></i> ملفات المسعفين
+                    </button>
+                    <a href="activities.html" class="btn btn-outline-info me-2">
+                        <i class="fas fa-bell me-1"></i> التحذيرات والترقيات
+                    </a>
+                    <button class="btn btn-outline-warning me-2" onclick="manualCheckDeletions()" title="فحص الحذف التلقائي">
+                        <i class="fas fa-user-times me-1"></i> فحص الحذف
+                    </button>
+                    <a href="admin.html" class="btn btn-outline-primary me-2 d-none" id="adminBtn" style="color: #6200ff; border-color: #b890f8;">
+                        <i class="fas fa-cog me-1"></i> لوحة التحكم
+                    </a>
+                    <a href="protocols.html" class="btn btn-info-1 me-2">
+                        <i class="fas fa-book"></i> بروتوكولات الإسعاف
+                    </a>
+                    <a href="login.html" class="btn btn-outline-danger" onclick="sessionStorage.removeItem('employeeData')">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- معرض الصور -->
+            <div class="image-gallery">
+                <div class="gallery-header">
+                    <h3>صور الفريق</h3>
+                </div>
+                <div class="image-grid">
+                    <div class="image-card">
+                        <img src="teem.png" alt="فريق الإسعاف">
+                        <div class="image-overlay">
+                            <span class="image-title">فريق الإسعاف</span>
+                        </div>
+                    </div>
+                    <div class="image-card">
+                        <img src="teem2.png" alt="إدارة خدماة الإسعاف">
+                        <div class="image-overlay">
+                            <span class="image-title">إدارة خدماة الإسعاف</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="gallery-navigation"></div>
+            </div>
+
+            <!-- جدول الموظفين -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>
+                        <i class="fas fa-users me-2"></i>
+                        جدول الحضور والانصراف
+                    </h2>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>اسم المسعف</th>
+                                <th>الكود</th>
+                                <th>الرتبة</th>
+                                <th>الحالة</th>
+                                <th>وقت الحضور</th>
+                                <th>وقت الانصراف</th>
+                                <th>الساعات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paramedicTableBody">
+                            <!-- سيتم إضافة الصفوف ديناميكياً -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ترقيم الصفحات -->
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- سكريبتات -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script src="shared.js"></script>
+    <script>
+        // Check if medic is already in the check-in/out table
+        function isMedicInTable(medicId) {
+            const table = document.getElementById('paramedicTableBody');
+            const rows = table.getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const idCell = row.cells[1]; // ID is in the second cell
+                if (idCell && idCell.textContent.trim() === medicId) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Add a new medic to the check-in/out table
+        function addMedicToTable(medic) {
+            const tableBody = document.getElementById('paramedicTableBody');
+            const newRow = document.createElement('tr');
+            
+            // Create table cells
+            const nameCell = document.createElement('td');
+            nameCell.textContent = medic.name || 'مسعف';
+            
+            const idCell = document.createElement('td');
+            idCell.textContent = medic.code || '';
+            
+            const ageCell = document.createElement('td');
+            ageCell.textContent = '+18';
+            
+            const inCell = document.createElement('td');
+            inCell.id = 'in-' + medic.id;
+            inCell.innerHTML = '<button class="btn btn-success btn-sm" onclick="recordCheckIn(\'' + medic.id + '\')">تسجيل الدخول</button>';
+            
+            const outCell = document.createElement('td');
+            outCell.id = 'out-' + medic.id;
+            outCell.innerHTML = '<button class="btn btn-danger btn-sm" onclick="recordCheckOut(\'' + medic.id + '\')">تسجيل الخروج</button>';
+            
+            const hoursCell = document.createElement('td');
+            hoursCell.id = 'hours-' + medic.id;
+            hoursCell.textContent = '-';
+            
+            const warningCell = document.createElement('td');
+            warningCell.innerHTML = '<i class="fas fa-check-circle text-success"></i> لا يوجد';
+            
+            // Append cells to row
+            newRow.appendChild(nameCell);
+            newRow.appendChild(idCell);
+            newRow.appendChild(ageCell);
+            newRow.appendChild(inCell);
+            newRow.appendChild(outCell);
+            newRow.appendChild(hoursCell);
+            newRow.appendChild(warningCell);
+            
+            // Add row to table
+            tableBody.appendChild(newRow);
+        }
+
+        // Display employee information and check admin permissions
+        document.addEventListener('DOMContentLoaded', function() {
+            // التحقق أولاً من وجود جلسة نشطة
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const activeCode = localStorage.getItem('activeCode');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            // إذا لم تكن هناك جلسة نشطة، أعد توجيه إلى صفحة تسجيل الدخول
+            if (!medic && !activeCode && !currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Check if it's an employee login
+            const employeeData = sessionStorage.getItem('employeeData') || localStorage.getItem('employeeData');
+            let employee = null;
+            
+            if (medic || activeCode) {
+                // Medic login
+                const nameElement = document.getElementById('employeeName');
+                const idElement = document.getElementById('employeeId');
+                
+                if (medic) {
+                    nameElement.textContent = medic.name || 'مسعف';
+                    idElement.textContent = 'كود: ' + (medic.code || activeCode || 'غير معروف');
+                    employee = medic; // Set employee object for permission check
+                    
+                    // Add medic to check-in/out table if not an admin
+                    if (!checkAdminPermissions() && !isMedicInTable(medic.id || activeCode)) {
+                        addMedicToTable(medic);
+                    }
+                } else {
+                    nameElement.textContent = 'مسعف';
+                    idElement.textContent = 'كود: ' + (activeCode || 'غير معروف');
+                }
+            } else if (employeeData) {
+                // Employee login
+                employee = JSON.parse(employeeData);
+                document.getElementById('employeeName').textContent = employee.name || 'موظف';
+                document.getElementById('employeeId').textContent = 'كود: ' + (employee.id || 'غير معروف');
+            }
+            
+            // Check and set admin permissions
+            if (checkAdminPermissions()) {
+                document.getElementById('adminBtn').classList.remove('d-none');
+            }
+        });
+
+        // التحقق من صلاحيات الإدارة - فقط للرتب المسؤولة
+        function checkAdminPermissions() {
+            // Check medic login first
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            if (medic) {
+                // فقط هذه الرتب المسؤولة يمكنها رؤية زر لوحة التحكم
+                const adminRoles = ['وزير', 'نائب وزير', 'مدير مستشفى'];
+                return adminRoles.includes(medic.role) || adminRoles.includes(medic.rank);
+            }
+            
+            // Check employee login
+            const employeeData = sessionStorage.getItem('employeeData') || localStorage.getItem('employeeData');
+            if (!employeeData) {
+                return false;
+            }
+            
+            const employee = JSON.parse(employeeData);
+            // الرتب المسؤولة باللغة العربية
+            const adminRanks = ['مدير مستشفى', 'نائب وزير', 'وزير'];
+            
+            // التحقق من الرتبة أو الدور
+            const hasAdminRank = employee.rank && adminRanks.includes(employee.rank);
+            const hasAdminRole = employee.role && adminRanks.includes(employee.role);
+            
+            return hasAdminRank || hasAdminRole;
+        }
+        
+        // إظهار زر الإدارة فقط للمستخدمين ذوي الصلاحيات
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (currentUser && currentUser.type === 'admin') {
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) {
+                    adminBtn.style.display = 'inline-block';
+                }
+            }
+            
+            // إظهار زر ملفات المسعفين لجميع المستخدمين المسجلين
+            const viewMedicsProfilesBtn = document.getElementById('viewMedicsProfilesBtn');
+            if (viewMedicsProfilesBtn) {
+                viewMedicsProfilesBtn.style.display = 'inline-block';
+            }
+        });
+
+        function formatTime(date) {
+            return convertToEnglishNumbers(date.toLocaleTimeString());
+        }
+
+        function calculateDuration(start, end) {
+            const diffMs = end - start;
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            return convertToEnglishNumbers(diffHrs.toFixed(2));
+        }
+
+        function recordCheckIn(paramedicId) {
+            const activeCode = localStorage.getItem('activeCode');
+            if (paramedicId !== activeCode) {
+                alert('🚫 لا يمكنك تسجيل الدخول في كود مسعف آخر.');
+                return;
+            }
+
+            const now = new Date();
+            const formatted = formatTime(now);
+            const inCell = document.getElementById('in-' + paramedicId);
+            inCell.textContent = formatted;
+            localStorage.setItem(paramedicId + '_login', now.toISOString());
+
+            const outCell = document.getElementById('out-' + paramedicId);
+            outCell.innerHTML = '<button class="btn btn-danger btn-sm" onclick="recordCheckOut(\'' + paramedicId + '\')">تسجيل الخروج</button>';
+        }
+
+        function recordCheckOut(paramedicId) {
+            const activeCode = localStorage.getItem('activeCode');
+            if (paramedicId !== activeCode) {
+                alert('🚫 لا يمكنك تسجيل الخروج في كود مسعف آخر.');
+                return;
+            }
+
+            const now = new Date();
+            const formatted = formatTime(now);
+            const outCell = document.getElementById('out-' + paramedicId);
+            outCell.textContent = formatted;
+            localStorage.setItem(paramedicId + '_logout', now.toISOString());
+
+            const loginTimeISO = localStorage.getItem(paramedicId + '_login');
+            if (loginTimeISO) {
+                const loginDate = new Date(loginTimeISO);
+                const duration = calculateDuration(loginDate, now);
+                const hoursCell = document.getElementById('hours-' + paramedicId);
+                hoursCell.textContent = duration + ' ساعة';
+                localStorage.setItem(paramedicId + '_hours', duration);
+                
+                // نظام XP - كل ساعة = 1 XP
+                const hoursWorked = parseFloat(duration);
+                const currentXP = parseInt(localStorage.getItem(paramedicId + '_xp') || '0');
+                const newXP = currentXP + Math.floor(hoursWorked);
+                localStorage.setItem(paramedicId + '_xp', newXP.toString());
+
+                // التحقق من إمكانية طلب ترقية
+                const medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+                const medic = medics.find(m => m.id === paramedicId);
+                
+                if (medic) {
+                    const availablePromotions = getAvailablePromotions(medic.rank || 'متدرب');
+                    if (availablePromotions.length > 0) {
+                        const nextPromotion = availablePromotions[0];
+                        if (newXP >= nextPromotion.cost) {
+                            // وصل إلى نقاط كافية للترقية التالية
+                            setTimeout(() => {
+                                showPromotionRequest(paramedicId);
+                            }, 1000);
+                        }
+                    }
+                }
+
+                // تحديث عرض XP
+                updateXPDisplay(paramedicId);
+            }
+
+            const inCell = document.getElementById('in-' + paramedicId);
+            inCell.innerHTML = '<button class="btn btn-success btn-sm" onclick="recordCheckIn(\'' + paramedicId + '\')">تسجيل الدخول</button>';
+        }
+
+        // تحديث عرض XP في الملف الشخصي فقط
+        function updateXPDisplay(paramedicId) {
+            // فقط تحديث الملف الشخصي إذا كان هو المستخدم النشط
+            const activeCode = localStorage.getItem('activeCode');
+            if (paramedicId !== activeCode) {
+                return; // لا تحديث XP للمستخدمين الآخرين
+            }
+            
+            const currentXP = parseInt(localStorage.getItem(paramedicId + '_xp') || '0');
+            const xpProgress = (currentXP % 50);
+            const level = Math.floor(currentXP / 50) + 1;
+            
+            // تحديث الملف الشخصي فقط
+            updatePersonalXP(currentXP, xpProgress, level);
+        }
+
+        // تحديث XP في الملف الشخصي
+        function updatePersonalXP(currentXP, xpProgress, level) {
+            const xpContainer = document.getElementById('personalXP');
+            if (xpContainer) {
+                xpContainer.innerHTML = '<div class="mt-2">' +
+                    '<h6>نقاط الخبرة (XP)</h6>' +
+                    '<div class="progress mb-2" style="height: 20px;">' +
+                        '<div class="progress-bar bg-info" role="progressbar" style="width: ' + (xpProgress / 50 * 100) + '%;" title="XP: ' + xpProgress + '/50">' +
+                            'المستوى ' + level + ' - ' + xpProgress + '/50 XP' +
+                        '</div>' +
+                    '</div>' +
+                    '<small class="text-muted">إجمالي النقاط: ' + currentXP + ' XP</small>' +
+                '</div>';
+            }
+            
+            // تحديث زر الترقية أيضاً
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            if (medic) {
+                updatePromotionButton(medic.id, currentXP, medic.rank || 'متدرب');
+            }
+        }
+
+        // تحديث حالة زر طلب الترقية
+        function updatePromotionButton(medicId, currentXP, currentRank) {
+            const promotionBtn = document.getElementById('promotionRequestBtn');
+            if (!promotionBtn) return;
+            
+            // التحقق من الأسبوعية
+            const lastRequestDate = localStorage.getItem(medicId + '_lastPromotionRequest');
+            if (lastRequestDate) {
+                const daysSinceLastRequest = Math.floor((Date.now() - new Date(lastRequestDate).getTime()) / (1000 * 60 * 60 * 24));
+                if (daysSinceLastRequest < 7) {
+                    promotionBtn.disabled = true;
+                    promotionBtn.innerHTML = `<i class="fas fa-clock me-2"></i> يمكنك الطلب بعد ${7 - daysSinceLastRequest} أيام`;
+                    promotionBtn.className = 'btn btn-secondary w-100';
+                    return;
+                }
+            }
+            
+            // التحقق من الترقيات المتاحة
+            const availablePromotions = getAvailablePromotions(currentRank);
+            if (availablePromotions.length === 0) {
+                promotionBtn.disabled = true;
+                promotionBtn.innerHTML = '<i class="fas fa-trophy me-2"></i> وصلت لأعلى رتبة';
+                promotionBtn.className = 'btn btn-success w-100';
+                return;
+            }
+            
+            // التحقق من النقاط الكافية
+            const nextPromotion = availablePromotions[0];
+            if (currentXP < nextPromotion.cost) {
+                promotionBtn.disabled = true;
+                promotionBtn.innerHTML = `<i class="fas fa-coins me-2"></i> تحتاج ${nextPromotion.cost - currentXP} XP إضافية`;
+                promotionBtn.className = 'btn btn-info w-100';
+                return;
+            }
+            
+            // الزر متاح للطلب
+            promotionBtn.disabled = false;
+            promotionBtn.innerHTML = '<i class="fas fa-level-up-alt me-2"></i> طلب ترقية';
+            promotionBtn.className = 'btn btn-warning w-100';
+        }
+
+        // دالة لطلب الترقية من الملف الشخصي
+        function requestPromotionFromProfile() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const activeCode = localStorage.getItem('activeCode');
+            
+            if (!medic && !activeCode) {
+                alert('❌ يجب تسجيل الدخول أولاً');
+                return;
+            }
+            
+            // الحصول على معرف المسعف
+            const medicId = medic ? medic.id : activeCode;
+            
+            // استدعاء دالة طلب الترقية الأصلية
+            showPromotionRequest(medicId);
+        }
+
+        // عرض طلب الترقية
+        function showPromotionRequest(paramedicId) {
+            const medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const medic = medics.find(m => m.id === paramedicId);
+            
+            if (!medic) {
+                alert('❌ لم يتم العثور على بيانات المسعف');
+                return;
+            }
+            
+            const currentXP = parseInt(localStorage.getItem(paramedicId + '_xp') || '0');
+            
+            // التحقق من الأسبوعية - لا يمكن طلب ترقية إلا كل 10 أيام
+            const lastRequestDate = localStorage.getItem(paramedicId + '_lastPromotionRequest');
+            if (lastRequestDate) {
+                const daysSinceLastRequest = Math.floor((Date.now() - new Date(lastRequestDate).getTime()) / (1000 * 60 * 60 * 24));
+                if (daysSinceLastRequest < 10) {
+                    alert(`❌ لا يمكنك طلب ترقية جديدة إلا بعد ${10 - daysSinceLastRequest} أيام\n\nآخر طلب: ${new Date(lastRequestDate).toLocaleDateString('ar-SA')}`);
+                    return;
+                }
+            }
+            
+            // تحديد الترقيات المتاحة حسب الرتبة الحالية
+            const availablePromotions = getAvailablePromotions(medic.rank || 'متدرب');
+            
+            if (availablePromotions.length === 0) {
+                alert('🎉 لقد وصلت إلى أعلى رتبة ممكنة!');
+                return;
+            }
+            
+            // عرض الترقيات المتاحة
+            let promotionOptions = '🎯 الترقيات المتاحة لك:\n\n';
+            availablePromotions.forEach((promo, index) => {
+                const canAfford = currentXP >= promo.cost;
+                const status = canAfford ? '✅ متاحة' : `❌ تحتاج ${promo.cost - currentXP} XP إضافية`;
+                promotionOptions += `${index + 1}. ${promo.name} - ${promo.cost} XP ${status}\n`;
+            });
+            
+            const choice = prompt(promotionOptions + '\n\nاختر رقم الترقية التي تود طلبها (أو إلغاء للخروج):');
+            
+            if (choice && !isNaN(choice)) {
+                const selectedIndex = parseInt(choice) - 1;
+                if (selectedIndex >= 0 && selectedIndex < availablePromotions.length) {
+                    const selectedPromotion = availablePromotions[selectedIndex];
+                    
+                    if (currentXP < selectedPromotion.cost) {
+                        alert(`❌ ليس لديك نقاط كافية!\n\nالترقية تتطلب: ${selectedPromotion.cost} XP\nنقاطك الحالية: ${currentXP} XP\n\nنقص: ${selectedPromotion.cost - currentXP} XP`);
+                        return;
+                    }
+                    
+                    // تأكيد طلب الترقية
+                    const confirmRequest = confirm(`🎯 طلب ترقية إلى ${selectedPromotion.name}\n\n` +
+                        `💰 التكلفة: ${selectedPromotion.cost} XP\n` +
+                        `📊 نقاطك الحالية: ${currentXP} XP\n` +
+                        `📉 النقاط المتبقية: ${currentXP - selectedPromotion.cost} XP\n\n` +
+                        `هل تريد إرسال طلب الترقية للمسئول؟`);
+                    
+                    if (confirmRequest) {
+                        // إنشاء طلب ترقية
+                        const promotionRequests = JSON.parse(localStorage.getItem('promotionRequests') || '[]');
+                        const newRequest = {
+                            id: Date.now().toString(),
+                            medicId: paramedicId,
+                            medicName: medic.name,
+                            medicCode: medic.code,
+                            currentRank: medic.rank || 'متدرب',
+                            requestedRank: selectedPromotion.name,
+                            promotionCost: selectedPromotion.cost,
+                            currentXP: currentXP,
+                            requestDate: new Date().toISOString(),
+                            status: 'pending', // pending, approved, rejected
+                            type: 'purchase' // نوع الطلب: شراء ترقية
+                        };
+                        
+                        promotionRequests.push(newRequest);
+                        localStorage.setItem('promotionRequests', JSON.stringify(promotionRequests));
+                        
+                        // حفظ تاريخ آخر طلب
+                        localStorage.setItem(paramedicId + '_lastPromotionRequest', new Date().toISOString());
+                        
+                        alert('✅ تم إرسال طلب الترقية بنجاح!\n\n' +
+                            `🎯 الترقية المطلوبة: ${selectedPromotion.name}\n` +
+                            `💰 التكلفة: ${selectedPromotion.cost} XP\n` +
+                            `⏳ سيتم خصم النقاط بعد موافقة المسئول\n\n` +
+                            'سيتم إبلاغك بقرار الإدارة قريباً.');
+                    }
+                } else {
+                    alert('❌ اختيار غير صحيح');
+                }
+            }
+        }
+
+        // الحصول على الترقيات المتاحة حسب الرتبة الحالية
+        function getAvailablePromotions(currentRank) {
+            const allPromotions = [
+                { name: 'مسعف', cost: 50, requiredRank: 'متدرب' },
+                { name: 'دكتور', cost: 100, requiredRank: 'مسعف' },
+                { name: 'اخصائي', cost: 150, requiredRank: 'دكتور' },
+                { name: 'بروفسور', cost: 200, requiredRank: 'اخصائي' },
+                { name: 'مدير مستشفي', cost: 300, requiredRank: 'بروفسور' }
+            ];
+            
+            // إرجاع الترقيات المتاحة فقط (الترقية التالية فقط)
+            const currentIndex = allPromotions.findIndex(p => p.name === currentRank);
+            if (currentIndex === -1 && currentRank === 'متدرب') {
+                // متدرب يمكنه طلب مسعف فقط
+                return [allPromotions[0]];
+            } else if (currentIndex >= 0 && currentIndex < allPromotions.length - 1) {
+                // يمكنه طلب الترقية التالية فقط
+                return [allPromotions[currentIndex + 1]];
+            }
+            
+            return []; // لا توجد ترقيات متاحة
+        }
+
+        // دالة لإضافة XP لمسعف معين (للاختبار والعرض)
+        function addXPToMedic(medicCode, xpAmount) {
+            const medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const medic = medics.find(m => m.code === medicCode);
+            
+            if (!medic) {
+                alert('❌ لم يتم العثور على مسعف بالكود: ' + medicCode);
+                return false;
+            }
+            
+            const currentXP = parseInt(localStorage.getItem(medic.id + '_xp') || '0');
+            const newXP = currentXP + xpAmount;
+            localStorage.setItem(medic.id + '_xp', newXP.toString());
+            
+            const level = Math.floor(newXP / 50) + 1;
+            const xpProgress = newXP % 50;
+            
+            alert(`✅ تم إضافة ${xpAmount} XP للمسعف ${medic.name}\n\n` +
+                  `📊 الإحصائيات الجديدة:\n` +
+                  `👤 الاسم: ${medic.name}\n` +
+                  `🔢 الكود: ${medic.code}\n` +
+                  `🏆 المستوى: ${level}\n` +
+                  `⭐ إجمالي XP: ${newXP}\n` +
+                  `📈 التقدم في المستوى: ${xpProgress}/50 XP\n\n` +
+                  `💡 كل 50 XP = طلب ترقية جديد!`);
+            
+            // تحديث العرض إذا كان المستخدم الحالي هو صاحب الـ XP
+            const activeCode = localStorage.getItem('activeCode');
+            if (medic.id === activeCode) {
+                updatePersonalXP(newXP, xpProgress, level);
+            }
+            
+            return true;
+        }
+
+        // دالة لشرح نظام XP
+        function explainXPSystem() {
+            // إنشاء مودال حديث وجميل للشرح
+            const modalHtml = `
+                <div class="modal fade" id="explainXPModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content" style="border: none; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); overflow: hidden;">
+                            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px 20px 0 0; border: none; padding: 20px;">
+                                <h5 class="modal-title text-white" style="font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                                    <i class="fas fa-gamepad me-2"></i>شرح نظام نقاط الخبرة (XP)
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); max-height: 70vh; overflow-y: auto;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm mb-3" style="border-radius: 15px; background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);">
+                                            <div class="card-body">
+                                                <h6 class="text-primary mb-3" style="font-weight: 700; font-size: 1.1rem; color: #667eea;">
+                                                    <i class="fas fa-book me-2"></i>كيف يكتسب المسعف XP
+                                                </h6>
+                                                <ul class="list-unstyled" style="font-size: 1rem; line-height: 1.8;">
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-clock text-primary me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">كل ساعة عمل = 1 XP</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-sign-out-alt text-primary me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">تسجيل الخروج تلقائياً يحسب الساعات ويضيف XP</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-user-plus text-primary me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">يمكن إضافة XP يدوياً (للمسئولين فقط)</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm mb-3" style="border-radius: 15px; background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%);">
+                                            <div class="card-body">
+                                                <h6 class="text-warning mb-3" style="font-weight: 700; font-size: 1.1rem; color: #f39c12;">
+                                                    <i class="fas fa-trophy me-2"></i>المستويات والترقيات
+                                                </h6>
+                                                <ul class="list-unstyled" style="font-size: 1rem; line-height: 1.8;">
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-star text-warning me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">كل 50 XP = مستوى جديد</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-level-up-alt text-warning me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">عند الوصول لـ 50 XP يمكن طلب ترقية</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-user-check text-warning me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">الطلب يذهب للمسئول للموافقة</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm mb-3" style="border-radius: 15px; background: linear-gradient(135deg, #d4edda 0%, #ffffff 100%);">
+                                            <div class="card-body">
+                                                <h6 class="text-info mb-3" style="font-weight: 700; font-size: 1.1rem; color: #17a2b8;">
+                                                    <i class="fas fa-lock me-2"></i>الخصوصية
+                                                </h6>
+                                                <ul class="list-unstyled" style="font-size: 1rem; line-height: 1.8;">
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-user text-info me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">كل مسعف يرى XP الخاص به فقط</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-user-shield text-info me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">المسئول يرى XP الجميع</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-eye-slash text-info me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">لا يمكن للمسعفين رؤية XP بعضهم البعض</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm mb-3" style="border-radius: 15px; background: linear-gradient(135deg, #f8d7da 0%, #ffffff 100%);">
+                                            <div class="card-body">
+                                                <h6 class="text-danger mb-3" style="font-weight: 700; font-size: 1.1rem; color: #dc3545;">
+                                                    <i class="fas fa-chart-bar me-2"></i>عرض XP
+                                                </h6>
+                                                <ul class="list-unstyled" style="font-size: 1rem; line-height: 1.8;">
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(220, 53, 69, 0.1); border-left: 3px solid #dc3545; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-user-circle text-danger me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">يظهر في الملف الشخصي فقط</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(220, 53, 69, 0.1); border-left: 3px solid #dc3545; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-progress-bar text-danger me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">شريط تقدم يوضح المستوى الحالي</span>
+                                                    </li>
+                                                    <li class="mb-3 p-3 rounded" style="background: rgba(220, 53, 69, 0.1); border-left: 3px solid #dc3545; display: flex; align-items: flex-start;">
+                                                        <i class="fas fa-coins text-danger me-3" style="width: 20px; flex-shrink: 0;"></i>
+                                                        <span style="font-weight: 500;">عرض إجمالي النقاط المكتسبة</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm" style="border-radius: 15px; background: linear-gradient(135deg, #e8f5e8 0%, #ffffff 100%);">
+                                            <div class="card-body text-center">
+                                                <h6 class="text-success mb-3" style="font-weight: 700; font-size: 1.1rem; color: #28a745;">
+                                                    <i class="fas fa-bullseye me-2"></i>الهدف
+                                                </h6>
+                                                <div class="row text-center">
+                                                    <div class="col-md-3">
+                                                        <i class="fas fa-rocket fa-2x text-success mb-2"></i>
+                                                        <p class="mb-0" style="font-size: 0.9rem;">تحفيز المسعفين على العمل</p>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <i class="fas fa-balance-scale fa-2x text-warning mb-2"></i>
+                                                        <p class="mb-0" style="font-size: 0.9rem;">نظام ترقيات عادل وشفاف</p>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                                                        <p class="mb-0" style="font-size: 0.9rem;">تتبع الأداء والتطور</p>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <i class="fas fa-medal fa-2x text-primary mb-2"></i>
+                                                        <p class="mb-0" style="font-size: 0.9rem;">تحقيق التميز والمنافسة</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: none;">
+                                <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 10px; padding: 12px 30px; font-weight: 600;">
+                                    <i class="fas fa-check me-2"></i>فهمت
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // إزالة المودال القديم إذا وجد
+            const oldModal = document.getElementById('explainXPModal');
+            if (oldModal) {
+                oldModal.remove();
+            }
+            
+            // إضافة المودال الجديد
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // عرض المودال
+            const modal = new bootstrap.Modal(document.getElementById('explainXPModal'));
+            modal.show();
+        }
+
+     
+
+
+        window.addEventListener('DOMContentLoaded', function() {
+            // تحميل جميع المسعفين من localStorage
+            const medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const activeCode = localStorage.getItem('activeCode');
+            
+            // عرض جميع المسعفين
+            medics.forEach(function(medic) {
+                addMedicToTable(medic);
+            });
+            
+            // تحديث حالة الأزرار
+            updateAttendanceButtons();
+        });
+
+        function addMedicToTable(medic) {
+            const tableBody = document.getElementById('paramedicTableBody');
+            const activeCode = localStorage.getItem('activeCode');
+            
+            // إنشاء صف جديد
+            const newRow = document.createElement('tr');
+            newRow.id = 'medic-' + medic.id;
+            
+            // اسم المسعف
+            const nameCell = document.createElement('td');
+            nameCell.innerHTML = '<span style="background: linear-gradient(45deg, #ffd700, #ffed4e, #fff59d); color: #333; padding: 4px 8px; border-radius: 6px; font-weight: bold; box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); writing-mode: horizontal-tb; text-orientation: mixed;">' + medic.name + '</span>';
+            nameCell.className = 'align-middle';
+            newRow.appendChild(nameCell);
+            
+            // كود المسعف
+            const codeCell = document.createElement('td');
+            codeCell.innerHTML = '<span style="background-color: #28a745; color: #ffda08; padding: 2px 6px; border-radius: 4px; font-weight: bold; writing-mode: horizontal-tb; text-orientation: mixed;">' + (medic.code || '') + '</span>';
+            codeCell.className = 'align-middle';
+            newRow.appendChild(codeCell);
+            
+            // رتبة المسعف
+            const rankCell = document.createElement('td');
+            rankCell.innerHTML = '<span style="background: linear-gradient(45deg, #1e3c72, #2a5298, #7e57c2); color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; box-shadow: 0 0 15px rgba(126, 87, 194, 0.6); writing-mode: horizontal-tb; text-orientation: mixed;">' + (medic.rank || 'مسعف') + '</span>';
+            rankCell.className = 'align-middle';
+            newRow.appendChild(rankCell);
+            
+            // حالة التواجد
+            const statusCell = document.createElement('td');
+            statusCell.className = 'align-middle';
+            statusCell.id = 'status-' + medic.id;
+            
+            // وقت الدخول
+            const inCell = document.createElement('td');
+            inCell.className = 'align-middle';
+            inCell.id = 'in-' + medic.id;
+            
+            // وقت الخروج
+            const outCell = document.createElement('td');
+            outCell.className = 'align-middle';
+            outCell.id = 'out-' + medic.id;
+            
+            // إجمالي الساعات
+            const hoursCell = document.createElement('td');
+            hoursCell.className = 'align-middle';
+            hoursCell.id = 'hours-' + medic.id;
+            
+            newRow.appendChild(statusCell);
+            newRow.appendChild(inCell);
+            newRow.appendChild(outCell);
+            newRow.appendChild(hoursCell);
+            
+            tableBody.appendChild(newRow);
+        }
+
+        function updateAttendanceButtons() {
+            const activeCode = localStorage.getItem('activeCode');
+            const medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            
+            console.log('تحديث الأزرار - الكود النشط:', activeCode);
+            
+            medics.forEach(function(medic) {
+                const loginISO = localStorage.getItem(medic.id + '_login');
+                const logoutISO = localStorage.getItem(medic.id + '_logout');
+                const hours = localStorage.getItem(medic.id + '_hours');
+                
+                const inCell = document.getElementById('in-' + medic.id);
+                const outCell = document.getElementById('out-' + medic.id);
+                const hoursCell = document.getElementById('hours-' + medic.id);
+                const statusCell = document.getElementById('status-' + medic.id);
+                
+                console.log('المسعف:', medic.name, '- ID:', medic.id, '- Login:', loginISO, '- Logout:', logoutISO);
+                
+                if (loginISO && (!logoutISO || new Date(loginISO) > new Date(logoutISO))) {
+                    // تسجيل دخول نشط
+                    console.log('حالة: متواجد');
+                    statusCell.innerHTML = '<span class="badge bg-success">متواجد</span>';
+                    inCell.innerHTML = '<span style="writing-mode: horizontal-tb; text-orientation: mixed;">' + formatTime(new Date(loginISO)) + '</span>';
+                    
+                    if (medic.id === activeCode) {
+                        outCell.innerHTML = '<button class="btn btn-danger btn-sm" onclick="recordCheckOut(\'' + medic.id + '\')">تسجيل الخروج</button>';
+                    } else {
+                        outCell.textContent = '---';
+                    }
+                } else {
+                    // غير متواجد
+                    console.log('حالة: غير متواجد');
+                    statusCell.innerHTML = '<span class="badge bg-secondary">غير متواجد</span>';
+                    
+                    if (medic.id === activeCode) {
+                        inCell.innerHTML = '<button class="btn btn-success btn-sm" onclick="recordCheckIn(\'' + medic.id + '\')">تسجيل الدخول</button>';
+                    } else {
+                        inCell.textContent = '---';
+                    }
+                    outCell.textContent = '---';
+                }
+
+                if (hours) {
+                    hoursCell.innerHTML = '<span style="writing-mode: horizontal-tb; text-orientation: mixed;">' + convertToEnglishNumbers(hours) + ' ساعة</span>';
+                }
+            });
+        }
+
+        // دالة تحويل الأرقام العربية إلى إنجليزية
+        function convertToEnglishNumbers(str) {
+            if (typeof str !== 'string') {
+                str = str.toString();
+            }
+            const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            
+            let result = str;
+            for (let i = 0; i < arabicNumbers.length; i++) {
+                result = result.replace(new RegExp(arabicNumbers[i], 'g'), englishNumbers[i]);
+            }
+            return result;
+        }
+
+        // وظائف التصدير
+        async function exportToImage() {
+            const body = document.body;
+
+            // نلتقط صورة كاملة للصفحة
+            const canvas = await html2canvas(body, {
+                scale: 2,
+                useCORS: true,
+                scrollY: -window.scrollY
+            });
+
+            const link = document.createElement('a');
+            link.download = 'جدول_الاسعاف.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        async function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const body = document.body;
+
+            // نلتقط صورة كاملة للصفحة
+            const canvas = await html2canvas(body, {
+                scale: 2,
+                useCORS: true,
+                scrollY: -window.scrollY
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            const imgWidth = pageWidth;
+            const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            // إذا كانت الصفحة أطول من صفحة A4، نقوم بتقسيمها تلقائيًا
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save('جدول_الاسعاف.pdf');
+        }
+    </script>
+    <script src="index-medics.js"></script>
+    <script>
+        // نظام الحذف التلقائي للمسعفين المفصولين
+        function checkScheduledDeletions() {
+            const now = new Date();
+            const disconnectionLog = JSON.parse(localStorage.getItem('disconnectionLog') || '[]');
+            const medicsList = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+            
+            let deletedMedics = [];
+            let updatedDisconnectionLog = [];
+            let updatedNotifications = [];
+            
+            console.log(`🔍 فحص الحذف التلقائي - الوقت الحالي: ${now.toLocaleString('ar-SA')}`);
+            console.log(`📋 عدد السجلات المراد فحصها: ${disconnectionLog.length}`);
+            
+            disconnectionLog.forEach((disconnection, index) => {
+                const deletionTime = new Date(disconnection.scheduledDeletion);
+                const timeRemaining = deletionTime - now;
+                
+                console.log(`📅 فحص المسعف ${disconnection.medicName} - وقت الحذف: ${deletionTime.toLocaleString('ar-SA')}, المتبقي: ${Math.floor(timeRemaining / 60000)} دقيقة`);
+                
+                if (now >= deletionTime) {
+                    console.log(`⚠️ وقت الحذف قد حان للمسعف: ${disconnection.medicName}`);
+                    
+                    // حذف المسعف
+                    const medicIndex = medicsList.findIndex(m => m.id === disconnection.medicId);
+                    if (medicIndex !== -1) {
+                        const deletedMedic = medicsList[medicIndex];
+                        medicsList.splice(medicIndex, 1);
+                        deletedMedics.push(deletedMedic);
+                        
+                        // حذف جميع بيانات المسعف
+                        const keysToDelete = [
+                            disconnection.medicId + '_login',
+                            disconnection.medicId + '_logout',
+                            disconnection.medicId + '_hours',
+                            disconnection.medicId + '_xp',
+                            'activeMedic',
+                            'activeCode'
+                        ];
+                        
+                        keysToDelete.forEach(key => {
+                            localStorage.removeItem(key);
+                            console.log(`🗑️ تم حذف المفتاح: ${key}`);
+                        });
+                        
+                        // حذف بيانات اللعب إذا وجدت
+                        const gamificationKeys = [
+                            'gamificationData_' + disconnection.medicId,
+                            'purchasedDesigns_' + disconnection.medicId,
+                            'equippedDesign_' + disconnection.medicId,
+                            'customColors_' + disconnection.medicId,
+                            'avatar_' + disconnection.medicId,
+                            'bio_' + disconnection.medicId
+                        ];
+                        
+                        gamificationKeys.forEach(key => {
+                            localStorage.removeItem(key);
+                        });
+                        
+                        // تسجيل عملية الحذف
+                        const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+                        deletionLog.push({
+                            medicId: disconnection.medicId,
+                            medicName: disconnection.medicName,
+                            medicCode: disconnection.medicCode || 'غير محدد',
+                            deletionDate: now.toISOString(),
+                            deletionReason: disconnection.reason || 'انتهاء مدة التحذير',
+                            scheduledDeletion: disconnection.scheduledDeletion
+                        });
+                        localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
+                        
+                        console.log(`✅ تم حذف المسعف بنجاح: ${deletedMedic.name} (${deletedMedic.code})`);
+                        
+                        // عرض إشعار للمستخدم
+                        showDeletionNotification(deletedMedic);
+                    } else {
+                        console.log(`❌ لم يتم العثور على المسعف في القائمة: ${disconnection.medicId}`);
+                    }
+                } else {
+                    // الاحتفاظ بالسجل إذا لم يحين وقت الحذف
+                    updatedDisconnectionLog.push(disconnection);
+                    console.log(`⏳ لم يحين وقت الحذف بعد للمسعف: ${disconnection.medicName}`);
+                }
+            });
+            
+            // تحديث الإشعارات - إزالة إشعارات الحذف المنتهية
+            notifications.forEach(notification => {
+                if (notification.scheduledDeletion) {
+                    const deletionTime = new Date(notification.scheduledDeletion);
+                    if (now < deletionTime) {
+                        updatedNotifications.push(notification);
+                    }
+                } else {
+                    updatedNotifications.push(notification);
+                }
+            });
+            
+            // حفظ البيانات المحدثة
+            localStorage.setItem('medicsList', JSON.stringify(medicsList));
+            localStorage.setItem('disconnectionLog', JSON.stringify(updatedDisconnectionLog));
+            localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+            
+            console.log(`💾 تم حفظ البيانات المحدثة`);
+            console.log(`📊 عدد المسعفين المتبقين: ${medicsList.length}`);
+            console.log(`📋 عدد السجلات المتبقية: ${updatedDisconnectionLog.length}`);
+            
+            // تحديث الواجهة إذا تم حذف مسعفين
+            if (deletedMedics.length > 0) {
+                loadMedics();
+                
+                // عرض إشعار بالمسعفين الذين تم حذفهم
+                if (deletedMedics.length === 1) {
+                    console.log(`🎯 تم حذف المسعف: ${deletedMedics[0].name} (${deletedMedics[0].code}) تلقائياً`);
+                } else {
+                    console.log(`🎯 تم حذف ${deletedMedics.length} مسعفين تلقائياً`);
+                    deletedMedics.forEach(medic => {
+                        console.log(`   - ${medic.name} (${medic.code})`);
+                    });
+                }
+            } else {
+                console.log(`ℹ️ لا يوجد مسعفين لحذفهم في هذا الوقت`);
+            }
+        }
+
+        // عرض إشعار الحذف للمستخدم
+        function showDeletionNotification(deletedMedic) {
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <h6 class="alert-heading">
+                    <i class="fas fa-user-times me-2"></i>تم حذف المسعف تلقائياً
+                </h6>
+                <p class="mb-0">
+                    تم حذف المسعف <strong>${deletedMedic.name}</strong> (${deletedMedic.code}) 
+                    بسبب انتهاء مدة التحذير.
+                </p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // إزالة الإشعار تلقائياً بعد 10 ثواني
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 10000);
+        }
+
+        // دالة لفحص الحذف يدوياً (للاختبار)
+        function manualCheckDeletions() {
+            console.log('🔧 بدء الفحص اليدوي للحذف...');
+            checkScheduledDeletions();
+        }
+
+        // تشغيل نظام الحذف التلقائي كل 30 ثانية (بدلاً من دقيقة واحدة)
+        setInterval(checkScheduledDeletions, 30000);
+
+        // تشغيل الفحص فوراً عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkScheduledDeletions, 2000); // انتظر 2 ثانية لتحميل كل البيانات
+        });
+
+        // إضافة زر للاختبار في وحدة تحكم المتصفح
+        window.manualCheckDeletions = manualCheckDeletions;
+        console.log('🔧 يمكنك اختبار الحذف يدوياً باستخدام: manualCheckDeletions()');
+
+        // دالة لعرض سجل الحذف
+        function viewDeletionLog() {
+            const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+            const disconnectionLog = JSON.parse(localStorage.getItem('disconnectionLog') || '[]');
+            
+            console.log('📋 === سجل الحذف الكامل ===');
+            if (deletionLog.length === 0) {
+                console.log('ℹ️ لا يوجد سجل حذف بعد');
+            } else {
+                deletionLog.forEach((record, index) => {
+                    const deletionDate = new Date(record.deletionDate);
+                    console.log(`${index + 1}. ${record.medicName} (${record.medicCode}) - ${deletionDate.toLocaleString('ar-SA')} - ${record.deletionReason}`);
+                });
+            }
+            
+            console.log('\n⏰ === سجل الحذف المجدول ===');
+            if (disconnectionLog.length === 0) {
+                console.log('ℹ️ لا يوجد مسعفين مجدولين للحذف');
+            } else {
+                const now = new Date();
+                disconnectionLog.forEach((record, index) => {
+                    const deletionTime = new Date(record.scheduledDeletion);
+                    const timeRemaining = deletionTime - now;
+                    const status = timeRemaining > 0 ? `متبقي ${Math.floor(timeRemaining / 60000)} دقيقة` : 'ينبغي الحذف الآن!';
+                    console.log(`${index + 1}. ${record.medicName} - ${deletionTime.toLocaleString('ar-SA')} - ${status}`);
+                });
+            }
+        }
+
+        // إضافة الدالة للوصول العام
+        window.viewDeletionLog = viewDeletionLog;
+        console.log('📋 يمكنك عرض سجل الحذف باستخدام: viewDeletionLog()');
+
+        // دوال الملف الشخصي
+        function openProfileModal() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const activeCode = localStorage.getItem('activeCode');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            let userData = null;
+            let userId = null;
+            
+            if (medic) {
+                userData = medic;
+                userId = medic.id;
+            } else if (currentUser) {
+                userData = currentUser;
+                userId = currentUser.id;
+            } else {
+                alert('لا يمكن تحميل بيانات المستخدم');
+                return;
+            }
+            
+            // حفظ userId في متغير عام لاستخدامه في دالة تغيير كلمة السر
+            window.currentUserId = userId;
+            window.currentUserData = userData;
+            window.currentUserType = medic ? 'medic' : 'admin';
+            
+            // إعادة عرض نموذج تغيير كلمة السر وإزالة أي أزرار عودة
+            document.getElementById('changePasswordForm').style.display = 'block';
+            
+            // إظهار زر الكاميرا (للمالك دائماً)
+            const avatarButton = document.querySelector('.profile-avatar-container button');
+            if (avatarButton) {
+                avatarButton.style.display = 'block';
+            }
+            
+            // إزالة أي أزرار عودة موجودة
+            const modalBody = document.querySelector('#profileModal .modal-body');
+            const existingBackButton = modalBody.querySelector('.btn-outline-info');
+            if (existingBackButton && existingBackButton.textContent.includes('العودة إلى قائمة المسعفين')) {
+                existingBackButton.remove();
+            }
+            
+            // تحميل بيانات المستخدم
+            document.getElementById('profileName').textContent = userData.name || 'غير محدد';
+            document.getElementById('profileCode').textContent = 'الكود: ' + convertToEnglishNumbers(userData.code || activeCode || 'غير محدد');
+            document.getElementById('profileRank').textContent = userData.rank || 'غير محدد';
+            
+            // تحميل XP للمسعف فقط
+            if (medic) {
+                const currentXP = parseInt(localStorage.getItem(medic.id + '_xp') || '0');
+                const xpProgress = (currentXP % 50);
+                const level = Math.floor(currentXP / 50) + 1;
+                
+                updatePersonalXP(currentXP, xpProgress, level);
+                
+                // تحديث حالة زر طلب الترقية
+                updatePromotionButton(medic.id, currentXP, medic.rank || 'متدرب');
+            } else {
+                // إخفاء قسم XP والزر للمسئولين
+                const xpContainer = document.getElementById('personalXP');
+                const promotionBtn = document.getElementById('promotionRequestBtn');
+                if (xpContainer) {
+                    xpContainer.style.display = 'none';
+                }
+                if (promotionBtn) {
+                    promotionBtn.style.display = 'none';
+                }
+            }
+            
+            // تحميل الصورة الرمزية
+            const savedAvatar = localStorage.getItem('avatar_' + (userData.id || activeCode));
+            if (savedAvatar) {
+                document.getElementById('profileAvatar').src = savedAvatar;
+            }
+            
+            // تحميل معلومات إضافية
+            if (userData.createdAt) {
+                document.getElementById('profileCreatedAt').textContent = convertToEnglishNumbers(new Date(userData.createdAt).toLocaleDateString('ar-SA'));
+            }
+            
+            const updatedAt = localStorage.getItem('updatedAt_' + (userData.id || activeCode));
+            if (updatedAt) {
+                document.getElementById('profileUpdatedAt').textContent = convertToEnglishNumbers(new Date(updatedAt).toLocaleDateString('ar-SA'));
+            } else {
+                document.getElementById('profileUpdatedAt').textContent = 'لم يتم التحديث';
+            }
+            
+            // تحميل الوصف الشخصي
+            loadProfileBio(userData.id || activeCode);
+            
+            // فتح النافذة
+            const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+            modal.show();
+        }
+
+        function updateAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // التحقق من أن المستخدم هو المالك أو مسؤول
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                const currentMedic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+                const profileUserId = window.currentUserId;
+                
+                // التحقق من الملكية أو الصلاحيات
+                const isOwner = (currentMedic && currentMedic.id === profileUserId) || (currentUser && currentUser.id === profileUserId);
+                const isAdmin = currentUser && (currentUser.level === 'minister' || currentUser.level === 'deputy');
+                
+                if (!isOwner && !isAdmin) {
+                    alert('لا يمكنك تعديل صورة هذا الملف الشخصي');
+                    // إعادة تعيين حقل الملف
+                    event.target.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarData = e.target.result;
+                    document.getElementById('profileAvatar').src = avatarData;
+                    
+                    // حفظ الصورة الرمزية
+                    const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+                    const activeCode = localStorage.getItem('activeCode');
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                    
+                    let userId = null;
+                    if (medic) {
+                        userId = medic.id;
+                    } else if (currentUser) {
+                        userId = currentUser.id;
+                    } else {
+                        userId = activeCode;
+                    }
+                    
+                    localStorage.setItem('avatar_' + userId, avatarData);
+                    localStorage.setItem('updatedAt_' + userId, new Date().toISOString());
+                    
+                    // تحديث تاريخ آخر تعديل
+                    document.getElementById('profileUpdatedAt').textContent = convertToEnglishNumbers(new Date().toLocaleDateString('ar-SA'));
+                    
+                    alert('تم تحديث الصورة الرمزية بنجاح');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // تغيير كلمة السر
+        document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // التحقق من تطابق كلمة السر
+            if (newPassword !== confirmPassword) {
+                alert('كلمة السر الجديدة وتأكيد كلمة السر غير متطابقين');
+                return;
+            }
+            
+            // استخدام المتغيرات العامة التي تم تحديدها في openProfileModal
+            const userId = window.currentUserId;
+            const userData = window.currentUserData;
+            const userType = window.currentUserType;
+            
+            if (!userId || !userData) {
+                alert('لا يمكن تحديد المستخدم. يرجى إغلاق النافذة وإعادة فتحها');
+                return;
+            }
+            
+            // التحقق من أن المستخدم هو المالك أو مسؤول
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const currentMedic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            
+            // التحقق من الملكية أو الصلاحيات
+            const isOwner = (currentMedic && currentMedic.id === userId) || (currentUser && currentUser.id === userId);
+            const isAdmin = currentUser && (currentUser.level === 'minister' || currentUser.level === 'deputy');
+            
+            if (!isOwner && !isAdmin) {
+                alert('لا يمكنك تعديل كلمة سر هذا الملف الشخصي');
+                return;
+            }
+            
+            // التحقق من كلمة السر الحالية
+            const savedPassword = localStorage.getItem('password_' + userId);
+            if (savedPassword) {
+                // استخدام كلمة السر المحفوظة بشكل منفصل
+                if (savedPassword !== currentPassword) {
+                    alert('كلمة السر الحالية غير صحيحة');
+                    return;
+                }
+            } else {
+                // استخدام كلمة السر من بيانات المستخدم (للحالات القديمة)
+                if (userData.discord !== currentPassword) {
+                    alert('كلمة السر الحالية غير صحيحة');
+                    return;
+                }
+            }
+            
+            // تحديث كلمة السر
+            userData.discord = newPassword;
+            
+            console.log('تغيير كلمة السر للمستخدم:', userId);
+            console.log('نوع المستخدم:', userType);
+            console.log('كلمة السر الجديدة:', newPassword);
+            
+            // تحديث في localStorage
+            if (userType === 'medic') {
+                localStorage.setItem('activeMedic', JSON.stringify(userData));
+                // حفظ كلمة السر بشكل منفصل للمسعف لتجنب التأثير على حسابات المسؤولين
+                localStorage.setItem('password_' + userId, newPassword);
+                console.log('تم حفظ كلمة السر للمسعف: password_' + userId);
+            } else if (userType === 'admin') {
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                // حفظ كلمة السر بشكل منفصل للمسؤول
+                localStorage.setItem('password_' + userId, newPassword);
+                console.log('تم حفظ كلمة السر للمسؤول: password_' + userId);
+            }
+            
+            // تحديث في قائمة المسعفين فقط إذا كان المستخدم الحالي هو مسؤول (وزير أو نائب وزير)
+            // وليس مسعف عادي لتجنب التأثير على حسابات المسؤولين
+            if (userType === 'admin' && (userData.level === 'minister' || userData.level === 'deputy')) {
+                const medicsList = JSON.parse(localStorage.getItem('medicsList') || '[]');
+                const medicIndex = medicsList.findIndex(m => m.id === userId);
+                if (medicIndex !== -1) {
+                    medicsList[medicIndex].discord = newPassword;
+                    localStorage.setItem('medicsList', JSON.stringify(medicsList));
+                    console.log('تم تحديث كلمة السر في قائمة المسعفين');
+                }
+            }
+            
+            // تحديث تاريخ آخر تعديل
+            localStorage.setItem('updatedAt_' + userId, new Date().toISOString());
+            document.getElementById('profileUpdatedAt').textContent = new Date().toLocaleDateString('ar-SA');
+            
+            // مسح النموذج
+            document.getElementById('changePasswordForm').reset();
+            
+            console.log('اكتمل تغيير كلمة السر بنجاح');
+            alert('تم تغيير كلمة السر بنجاح');
+        });
+
+        // حفظ الوصف الشخصي
+        function saveProfileBio() {
+            const bioText = document.getElementById('profileBio').value.trim();
+            const userId = window.currentUserId;
+            
+            if (!userId) {
+                alert('لا يمكن تحديد المستخدم');
+                return;
+            }
+            
+            // حفظ الوصف الشخصي
+            localStorage.setItem('bio_' + userId, bioText);
+            localStorage.setItem('updatedAt_' + userId, new Date().toISOString());
+            
+            // تحديث تاريخ آخر تعديل
+            document.getElementById('profileUpdatedAt').textContent = convertToEnglishNumbers(new Date().toLocaleDateString('ar-SA'));
+            
+            alert('تم حفظ الوصف الشخصي بنجاح');
+        }
+
+        // تحميل الوصف الشخصي
+        function loadProfileBio(userId) {
+            const bioText = localStorage.getItem('bio_' + userId);
+            const bioTextarea = document.getElementById('profileBio');
+            
+            if (bioTextarea) {
+                bioTextarea.value = bioText || '';
+            }
+        }
+
+        // دالة فتح نافذة ملفات المسعفين
+        function openMedicsProfilesModal() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            
+            // التحقق من وجود مستخدم مسجل
+            if (!currentUser && !medic) {
+                alert('يجب تسجيل الدخول أولاً');
+                return;
+            }
+            
+            loadMedicsProfiles();
+            const modal = new bootstrap.Modal(document.getElementById('medicsProfilesModal'));
+            modal.show();
+        }
+
+        // تحميل ملفات المسعفين
+        function loadMedicsProfiles() {
+            const medicsList = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const profilesContainer = document.getElementById('medicsProfilesList');
+            
+            if (medicsList.length === 0) {
+                profilesContainer.innerHTML = '<div class="col-12 text-center"><p class="text-muted">لا يوجد مسعفون حالياً</p></div>';
+                return;
+            }
+            
+            profilesContainer.innerHTML = medicsList.map(medic => {
+                const avatar = localStorage.getItem('avatar_' + medic.id) || 'https://picsum.photos/seed/' + medic.id + '/100/100.jpg';
+                const updatedAt = localStorage.getItem('updatedAt_' + medic.id);
+                const bioText = localStorage.getItem('bio_' + medic.id) || '';
+                const shortBio = bioText.length > 50 ? bioText.substring(0, 50) + '...' : bioText;
+                
+                // التحقق من وجود رسائل إنذار
+                const medicNotifications = JSON.parse(localStorage.getItem('medicNotifications_' + medic.id) || '[]');
+                const hasWarnings = medicNotifications.length > 0;
+                const warningBadge = hasWarnings ? `<span class="badge bg-warning text-dark ms-2"><i class="fas fa-exclamation-triangle me-1"></i>${medicNotifications.length}</span>` : '';
+                
+                return `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card profile-card ${hasWarnings ? 'border-warning' : ''}" style="border: 2px solid ${hasWarnings ? '#ffc107' : '#FFD700'}; border-radius: 15px; box-shadow: 0 0 ${hasWarnings ? '25px rgba(255, 193, 7, 0.4)' : '15px rgba(255, 215, 0, 0.2)'}; transition: transform 0.3s ease;">
+                            <div class="card-body text-center">
+                                <div class="position-relative">
+                                    <img src="${avatar}" alt="${medic.name}" class="rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover; border: 3px solid ${hasWarnings ? '#ffc107' : '#FFD700'};">
+                                    ${hasWarnings ? '<div class="position-absolute top-0 end-0"><span class="badge bg-warning text-danger"><i class="fas fa-exclamation-triangle"></i></span></div>' : ''}
+                                </div>
+                                <h5 class="card-title" style="color: #2c3e50; font-weight: 700;">
+                                    ${medic.name}
+                                    ${warningBadge}
+                                </h5>
+                                <p class="text-muted mb-2">الكود: ${convertToEnglishNumbers(medic.code)}</p>
+                                <span class="badge bg-success mb-3">${medic.rank || 'غير محدد'}</span>
+                                ${shortBio ? `<p class="text-muted mb-2 small" style="font-style: italic;">"${shortBio}"</p>` : ''}
+                                <br>
+                                <small class="text-muted">
+                                    ${updatedAt ? 'آخر تحديث: ' + convertToEnglishNumbers(new Date(updatedAt).toLocaleDateString('ar-SA')) : 'لم يتم التحديث'}
+                                </small>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewMedicProfile('${medic.id}')">
+                                        <i class="fas fa-eye me-1"></i> عرض الملف
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // عرض ملف مسعف محدد
+        function viewMedicProfile(medicId) {
+            const medicsList = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const medic = medicsList.find(m => m.id === medicId);
+            
+            if (!medic) {
+                alert('المسعف غير موجود');
+                return;
+            }
+            
+            // التحقق من المستخدم الحالي
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const currentMedic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            
+            // إغلاق نافذة ملفات المسعفين
+            const medicsModal = bootstrap.Modal.getInstance(document.getElementById('medicsProfilesModal'));
+            medicsModal.hide();
+            
+            // تحميل بيانات المسعف في نافذة الملف الشخصي
+            window.currentUserId = medic.id;
+            window.currentUserData = medic;
+            window.currentUserType = 'medic';
+            
+            // تحميل البيانات في النافذة
+            document.getElementById('profileName').textContent = medic.name || 'غير محدد';
+            document.getElementById('profileCode').textContent = 'الكود: ' + convertToEnglishNumbers(medic.code || 'غير محدد');
+            document.getElementById('profileRank').textContent = medic.rank || 'غير محدد';
+            
+            // التحقق من المستخدم الحالي وإخفاء XP للملفات الشخصية الأخرى
+            const activeCode = localStorage.getItem('activeCode');
+            const isOwner = medic.id === activeCode;
+            const isAdmin = currentUser && (currentUser.level === 'minister' || currentUser.level === 'deputy');
+            
+            // إظهار XP فقط للمالك أو المسئول
+            const xpContainer = document.getElementById('personalXP');
+            if (xpContainer) {
+                if (isOwner || isAdmin) {
+                    const currentXP = parseInt(localStorage.getItem(medic.id + '_xp') || '0');
+                    const xpProgress = (currentXP % 50);
+                    const level = Math.floor(currentXP / 50) + 1;
+                    updatePersonalXP(currentXP, xpProgress, level);
+                    xpContainer.style.display = 'block';
+                } else {
+                    xpContainer.style.display = 'none';
+                }
+            }
+            
+            // تحميل الصورة الرمزية
+            const savedAvatar = localStorage.getItem('avatar_' + medic.id);
+            if (savedAvatar) {
+                document.getElementById('profileAvatar').src = savedAvatar;
+            } else {
+                document.getElementById('profileAvatar').src = 'https://picsum.photos/seed/' + medic.id + '/150/150.jpg';
+            }
+            
+            // تحميل معلومات إضافية
+            if (medic.createdAt) {
+                document.getElementById('profileCreatedAt').textContent = convertToEnglishNumbers(new Date(medic.createdAt).toLocaleDateString('ar-SA'));
+            }
+            
+            const updatedAt = localStorage.getItem('updatedAt_' + medic.id);
+            if (updatedAt) {
+                document.getElementById('profileUpdatedAt').textContent = convertToEnglishNumbers(new Date(updatedAt).toLocaleDateString('ar-SA'));
+            } else {
+                document.getElementById('profileUpdatedAt').textContent = 'لم يتم التحديث';
+            }
+            
+            // إزالة أي أزرار عودة موجودة
+            const modalBody = document.querySelector('#profileModal .modal-body');
+            const existingBackButton = modalBody.querySelector('.btn-outline-info');
+            if (existingBackButton && existingBackButton.textContent.includes('العودة إلى قائمة المسعفين')) {
+                existingBackButton.remove();
+            }
+            
+            // قسم ملفات المسعفين - عرض فقط دائماً
+            // إخفاء نموذج تغيير كلمة السر بالكامل
+            document.getElementById('changePasswordForm').style.display = 'none';
+            
+            // إظهار قسم الوصف الشخصي للقراءة فقط
+            const bioSection = document.querySelector('.bio-section');
+            if (bioSection) {
+                bioSection.style.display = 'block';
+                
+                // تحميل الوصف الشخصي وجعله للقراءة فقط
+                const bioText = localStorage.getItem('bio_' + medic.id) || 'لا يوجد وصف شخصي';
+                
+                // استبدال الـ textarea بـ p للعرض فقط
+                bioSection.innerHTML = `
+                    <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
+                        <i class="fas fa-user me-2" style="color: #28a745;"></i>الوصف الشخصي
+                    </h6>
+                    <div class="mb-3">
+                        <p class="form-control" style="min-height: 100px; background-color: #f8f9fa; border: 2px solid #FFD700; border-radius: 8px; padding: 12px; font-size: 16px; white-space: pre-wrap;">${bioText}</p>
+                    </div>
+                `;
+            }
+            
+            // إضافة قسم رسائل الإنذار
+            const warningSection = document.createElement('div');
+            warningSection.className = 'alert-warning-section mt-4';
+            warningSection.style.cssText = 'background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%); border-radius: 10px; padding: 20px; border: 1px solid #ffeaa7;';
+            
+            // تحميل رسائل الإنذار للمسعف
+            const medicNotifications = JSON.parse(localStorage.getItem('medicNotifications_' + medic.id) || '[]');
+            
+            let warningContent = `
+                <h6 class="mb-3" style="color: #856404; font-weight: 600;">
+                    <i class="fas fa-exclamation-triangle me-2" style="color: #ffc107;"></i>رسائل الإنذار
+                </h6>
+            `;
+            
+            if (medicNotifications.length === 0) {
+                warningContent += `
+                    <div class="alert alert-success" style="border-radius: 8px; border-left: 4px solid #28a745;">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span style="color: #155724;">لا توجد رسائل إنذار حالية</span>
+                    </div>
+                `;
+            } else {
+                medicNotifications.forEach(notification => {
+                    const notificationDate = new Date(notification.date);
+                    const formattedDate = convertToEnglishNumbers(notificationDate.toLocaleDateString('ar-SA'));
+                    const formattedTime = convertToEnglishNumbers(notificationDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }));
+                    
+                    warningContent += `
+                        <div class="alert alert-warning mb-2" style="border-radius: 8px; border-left: 4px solid #ffc107; background-color: #fff3cd; border-color: #ffeaa7;">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1" style="color: #856404; font-weight: 600;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>إنذار
+                                    </h6>
+                                    <p class="mb-2" style="color: #856404; margin-bottom: 8px;">${notification.reason}</p>
+                                    <small class="text-muted" style="color: #6c757d;">
+                                        <i class="fas fa-clock me-1"></i>${formattedDate} - ${formattedTime}
+                                    </small>
+                                    ${notification.warnedBy ? `<br><small class="text-muted" style="color: #dc3545;"><i class="fas fa-user me-1"></i>من: ${notification.warnedBy}</small>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            warningSection.innerHTML = warningContent;
+            
+            // إضافة قسم الإنذار إلى النافذة
+            const profileModalBody = document.querySelector('#profileModal .modal-body');
+            const additionalInfoSection = profileModalBody.querySelector('.additional-info');
+            if (additionalInfoSection) {
+                profileModalBody.insertBefore(warningSection, additionalInfoSection);
+            } else {
+                profileModalBody.appendChild(warningSection);
+            }
+            
+            // إخفاء زر الكاميرا دائماً في قسم ملفات المسعفين
+            const avatarButton = document.querySelector('.profile-avatar-container button');
+            if (avatarButton) {
+                avatarButton.style.display = 'none';
+            }
+            
+            // إضافة رسالة توضيحية للعرض فقط
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'alert alert-info mb-3';
+            messageDiv.innerHTML = '<i class="fas fa-eye me-2"></i>هذا الملف الشخصي للعرض فقط. لتعديل بياناتك، استخدم زر "الملف الشخصي" من الأعلى';
+            
+            // إضافة الرسالة قبل نموذج تغيير كلمة السر
+            const passwordSection = profileModalBody.querySelector('.password-change-section');
+            profileModalBody.insertBefore(messageDiv, passwordSection);
+            
+            // إضافة زر العودة
+            const backButton = document.createElement('button');
+            backButton.className = 'btn btn-outline-info mb-3';
+            backButton.innerHTML = '<i class="fas fa-arrow-right me-1"></i> العودة إلى قائمة المسعفين';
+            backButton.onclick = function() {
+                document.getElementById('profileModal').querySelector('.btn-close').click();
+                setTimeout(openMedicsProfilesModal, 300);
+            };
+            
+            // إضافة زر العودة قبل الرسالة
+            profileModalBody.insertBefore(backButton, messageDiv);
+            
+            // فتح نافذة الملف الشخصي
+            setTimeout(() => {
+                const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+                modal.show();
+            }, 300);
+        }
+    </script>
+
+    <script>
+        // نظام الإشعارات للمسعفين
+        let notificationInterval;
+        
+        // عرض الإشعارات
+        function showNotifications() {
+            const activeMedic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            
+            if (!activeMedic) {
+                return; // لا عرض إشعارات للمسؤولين
+            }
+            
+            const notifications = JSON.parse(localStorage.getItem('medicNotifications_' + activeMedic.id) || '[]');
+            const container = document.getElementById('notificationContainer');
+            
+            if (notifications.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            container.innerHTML = '';
+            
+            notifications.forEach(notification => {
+                const notificationEl = createNotificationElement(notification);
+                container.appendChild(notificationEl);
+            });
+        }
+        
+        // إنشاء عنصر الإشعار
+        function createNotificationElement(notification) {
+            const div = document.createElement('div');
+            div.className = 'notification-item';
+            
+            const timeAgo = getTimeAgo(new Date(notification.date));
+            
+            div.innerHTML = `
+                <div class="notification-header">
+                    <span class="notification-title">⚠️ إنذار</span>
+                    <button class="notification-close" onclick="dismissNotification('${notification.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="notification-content">
+                    ${notification.reason}
+                </div>
+                <div class="notification-meta">
+                    <span class="notification-time">${timeAgo}</span>
+                    <span class="notification-from">من: ${notification.warnedBy}</span>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // حساب الوقت المنقضي
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (minutes < 1) {
+                return 'الآن';
+            } else if (minutes < 60) {
+                return `منذ ${minutes} دقيقة`;
+            } else if (hours < 24) {
+                return `منذ ${hours} ساعة`;
+            } else {
+                return `منذ ${days} يوم`;
+            }
+        }
+        
+        // إزالة الإشعار
+        function dismissNotification(notificationId) {
+            const activeMedic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            if (!activeMedic) return;
+            
+            const notifications = JSON.parse(localStorage.getItem('medicNotifications_' + activeMedic.id) || '[]');
+            const updatedNotifications = notifications.filter(n => n.id !== notificationId);
+            
+            localStorage.setItem('medicNotifications_' + activeMedic.id, JSON.stringify(updatedNotifications));
+            
+            // إزالة الإشعار مع تأثير الحركة
+            const notificationEl = event.target.closest('.notification-item');
+            notificationEl.classList.add('notification-exit');
+            
+            setTimeout(() => {
+                showNotifications();
+            }, 300);
+        }
+        
+        // تحديث الإشعارات كل دقيقة
+        function startNotificationSystem() {
+            showNotifications(); // عرض فوري
+            notificationInterval = setInterval(showNotifications, 60000); // تحديث كل دقيقة
+        }
+        
+        // إيقاف نظام الإشعارات
+        function stopNotificationSystem() {
+            if (notificationInterval) {
+                clearInterval(notificationInterval);
+            }
+        }
+        
+        // بدء النظام عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(startNotificationSystem, 1000); // بدء بعد ثانية واحدة
+        });
+    </script>
+
+    <!-- Profile Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border: 3px solid #FFD700; border-radius: 15px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 12px 12px 0 0; border-bottom: 2px solid #FFD700;">
+                    <h5 class="modal-title" style="color: white; font-weight: 700; text-shadow: 0 0 10px rgba(255,255,255,0.5);">
+                        <i class="fas fa-user-circle me-2"></i> الملف الشخصي
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <!-- معلومات المسعف -->
+                    <div class="text-center mb-4">
+                        <div class="profile-avatar-container mb-3">
+                            <img id="profileAvatar" src="https://picsum.photos/seed/medic/150/150.jpg" alt="الصورة الرمزية" class="profile-avatar" style="width: 150px; height: 150px; border-radius: 50%; border: 4px solid #FFD700; object-fit: cover;">
+                            <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0" onclick="document.getElementById('avatarInput').click()" style="border-radius: 50%; width: 40px; height: 40px;">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="updateAvatar(event)">
+                        
+                        <h4 id="profileName" class="mb-1" style="color: #2c3e50; font-weight: 700;"></h4>
+                        <p id="profileCode" class="text-muted mb-2"></p>
+                        <p id="profileRank" class="badge bg-success mb-3"></p>
+                        
+                        <!-- قسم نقاط الخبرة (XP) -->
+                        <div id="personalXP">
+                            <!-- سيتم ملؤه بواسطة JavaScript -->
+                        </div>
+                        
+                        <!-- زر طلب الترقية -->
+                        <div class="mt-3">
+                            <button class="btn btn-warning w-100" onclick="requestPromotionFromProfile()" id="promotionRequestBtn">
+                                <i class="fas fa-level-up-alt me-2"></i> طلب ترقية
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- نموذج تغيير كلمة السر -->
+                    <div class="password-change-section">
+                        <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
+                            <i class="fas fa-key me-2" style="color: #28a745;"></i>تغيير كلمة السر
+                        </h6>
+                        <form id="changePasswordForm">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label" style="color: #2c3e50; font-weight: 600;">كلمة السر الحالية</label>
+                                <input type="password" class="form-control" id="currentPassword" required
+                                       style="border: 2px solid #FFD700; border-radius: 8px; padding: 12px; font-size: 16px;">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label" style="color: #2c3e50; font-weight: 600;">كلمة السر الجديدة</label>
+                                <input type="password" class="form-control" id="newPassword" required minlength="4"
+                                       style="border: 2px solid #FFD700; border-radius: 8px; padding: 12px; font-size: 16px;">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label" style="color: #2c3e50; font-weight: 600;">تأكيد كلمة السر الجديدة</label>
+                                <input type="password" class="form-control" id="confirmPassword" required minlength="4"
+                                       style="border: 2px solid #FFD700; border-radius: 8px; padding: 12px; font-size: 16px;">
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success" style="border-radius: 8px; padding: 12px; font-weight: 600;">
+                                    <i class="fas fa-save me-2"></i>حفظ كلمة السر الجديدة
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- الوصف الشخصي -->
+                    <div class="bio-section mt-4">
+                        <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
+                            <i class="fas fa-pen me-2" style="color: #28a745;"></i>الوصف الشخصي
+                        </h6>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="profileBio" rows="4" maxlength="50" placeholder="اكتب شيئاً عن نفسك..."
+                                      style="border: 2px solid #FFD700; border-radius: 8px; padding: 12px; font-size: 16px; resize: vertical;"></textarea>
+                            <small class="text-muted">الحد الأقصى: 50 حرف</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="saveProfileBio()" style="border-radius: 8px; padding: 12px; font-weight: 600;">
+                                <i class="fas fa-save me-2"></i>حفظ الوصف الشخصي
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- معلومات إضافية -->
+                    <div class="additional-info mt-4">
+                        <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
+                            <i class="fas fa-info-circle me-2" style="color: #28a745;"></i>معلومات إضافية
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">تاريخ التسجيل:</small>
+                                <p id="profileCreatedAt" class="mb-2" style="color: #28a745; font-weight: 600;"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">آخر تحديث للملف الشخصي:</small>
+                                <p id="profileUpdatedAt" class="mb-2" style="color: #28a745; font-weight: 600;"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- حاوية الإشعارات -->
+    <div class="notification-container" id="notificationContainer">
+        <!-- سيتم ملؤها بواسطة JavaScript -->
+    </div>
+
+    <!-- Medics Profiles Modal -->
+    <div class="modal fade" id="medicsProfilesModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border: 3px solid #FFD700; border-radius: 15px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-radius: 12px 12px 0 0; border-bottom: 2px solid #FFD700;">
+                    <h5 class="modal-title" style="color: white; font-weight: 700; text-shadow: 0 0 10px rgba(255,255,255,0.5);">
+                        <i class="fas fa-users me-2"></i> ملفات المسعفين
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <!-- قائمة المسعفين -->
+                    <div class="row" id="medicsProfilesList">
+                        <!-- سيتم ملؤها ديناميكياً -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تحديث التصميم عند فتح الملف الشخصي
+        function updateProfileDesign() {
+            const userId = getUserId();
+            const equippedDesign = localStorage.getItem('equippedDesign_' + userId);
+            
+            if (equippedDesign) {
+                applyDesignToProfile(equippedDesign);
+            }
+        }
+
+        // الحصول على معرف المستخدم الحالي
+        function getUserId() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const activeCode = localStorage.getItem('activeCode');
+            return medic ? medic.id : activeCode;
+        }
+
+        // تطبيق التصميم على الملف الشخصي
+        function applyDesignToProfile(designId) {
+            // إزالة أي تصميم موجود أولاً
+            const profileAvatar = document.getElementById('profileAvatar');
+            if (profileAvatar) {
+                profileAvatar.style.border = '4px solid #FFD700';
+                profileAvatar.style.borderImage = 'none';
+                profileAvatar.style.boxShadow = 'none';
+            }
+        }
+
+        // إضافة تحديث التصميم عند فتح الملف الشخصي
+        const originalOpenProfileModal = window.openProfileModal;
+        if (originalOpenProfileModal) {
+            window.openProfileModal = function() {
+                originalOpenProfileModal();
+                setTimeout(updateProfileDesign, 100);
+            };
+        }
+    </script>
+</body>
+        <footer>
+            &copy; 2026 وزارة الصحة - جميع الحقوق محفوظة 👩‍⚕️𝓖𝓱𝓪𝔃𝔀𝓪𝓷🚑
+        </footer>
+    </div>
+</html>
