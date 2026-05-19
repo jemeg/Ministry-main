@@ -2,28 +2,31 @@ const MEDICS_PER_PAGE = 10;
 let currentPage = 1;
 
 document.addEventListener('DOMContentLoaded', function() {
-    const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    
-    if (!medic && !currentUser) {
-        window.location.href = 'login.html';
-        return;
-    }
-    
-    if (medic) {
-        document.getElementById('employeeName').textContent = medic.name || 'مسعف';
-        document.getElementById('employeeId').textContent = 'كود: ' + (medic.code || 'غير معروف');
-    } else if (currentUser) {
-        document.getElementById('employeeName').textContent = currentUser.name || 'مدير';
-        document.getElementById('employeeId').textContent = 'كود: ' + (currentUser.id || 'admin');
-    }
-    
-    if (currentUser && currentUser.type === 'admin') {
-        document.getElementById('adminBtn').classList.remove('d-none');
-    }
-    
-    loadMedics();
-    loadWarningsBanner();
+    loadAllFromFirestore().then(function() {
+        const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        
+        if (!medic && !currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        if (medic) {
+            document.getElementById('employeeName').textContent = medic.name || 'مسعف';
+            document.getElementById('employeeId').textContent = 'كود: ' + (medic.code || 'غير معروف');
+        } else if (currentUser) {
+            document.getElementById('employeeName').textContent = currentUser.name || 'مدير';
+            document.getElementById('employeeId').textContent = 'كود: ' + (currentUser.id || 'admin');
+        }
+        
+        if (currentUser && currentUser.type === 'admin') {
+            document.getElementById('adminBtn').classList.remove('d-none');
+        }
+        
+        setupRealtimeListeners();
+        loadMedics();
+        loadWarningsBanner();
+    });
 });
 
 function getBadgeSVG(rank) {

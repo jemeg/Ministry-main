@@ -178,18 +178,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // ربط النماذج
-    var loginForm = document.getElementById('medicLoginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
+    loadAllFromFirestore().then(function() {
+        // ربط النماذج
+        var loginForm = document.getElementById('medicLoginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+        }
 
-    var registerForm = document.getElementById('medicRegisterForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegister);
-    }
+        var registerForm = document.getElementById('medicRegisterForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', handleRegister);
+        }
 
-    checkPendingRequest();
+        checkPendingRequest();
+    });
 });
 
 // ===== معالجة تسجيل الدخول =====

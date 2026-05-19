@@ -102,16 +102,17 @@ function listenToCollection(collection, callback) {
 
 function setupRealtimeListeners() {
     if (!isFirebaseReady) return;
-    const collections = ['medicsList', 'codeSystem', 'officialsList', 'leaveRequests', 'suggestions'];
+    const collections = ['medicsList', 'codeSystem', 'officialsList', 'leaveRequests', 'suggestions', 'pendingRequests', 'notifications', 'promotionsHistory'];
     
     collections.forEach(collection => {
         listenToCollection(collection, (data) => {
-            // Auto-refresh UI functions if they exist on the current page
             if (collection === 'medicsList' && typeof loadMedicsList === 'function') loadMedicsList();
             if (collection === 'codeSystem' && typeof loadCodeSystem === 'function') loadCodeSystem();
             if (collection === 'officialsList' && typeof loadOfficialsList === 'function') loadOfficialsList();
             if (collection === 'leaveRequests' && typeof loadAdminLeaveRequests === 'function') loadAdminLeaveRequests();
             if (collection === 'suggestions' && typeof loadAdminSuggestions === 'function') loadAdminSuggestions();
+            if (collection === 'pendingRequests' && typeof loadRequests === 'function') loadRequests();
+            if (collection === 'pendingRequests' && typeof loadRequestsHistory === 'function') loadRequestsHistory();
         });
     });
 }
