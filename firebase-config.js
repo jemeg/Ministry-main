@@ -11,6 +11,7 @@ const firebaseConfig = {
 
 let db = null;
 let isFirebaseReady = false;
+let isSyncing = false; // Flag to prevent infinite loops
 
 // Check if Firebase is loaded correctly
 if (typeof firebase !== 'undefined') {
@@ -29,7 +30,7 @@ if (typeof firebase !== 'undefined') {
 // ===== Safe Data Sync Functions =====
 
 async function saveToFirestore(collection, data) {
-    if (!isFirebaseReady || !db) return;
+    if (!isFirebaseReady || !db || isSyncing) return;
     try {
         await db.collection(collection).doc('data').set(data);
     } catch (error) {
@@ -78,7 +79,9 @@ async function loadAllFromFirestore() {
     for (const key of collections) {
         const data = await loadFromFirestore(key);
         if (data !== null) {
+            isSyncing = true;
             localStorage.setItem(key, JSON.stringify(data));
+            isSyncing = false;
         }
     }
 }
@@ -88,7 +91,10 @@ function listenToCollection(collection, callback) {
     db.collection(collection).doc('data').onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
+            isSyncing = true;
             localStorage.setItem(collection, JSON.stringify(data));
+            isSyncing = false;
+            
             if (typeof callback === 'function') callback(data);
         }
     });
@@ -114,6 +120,9 @@ function setupRealtimeListeners() {
 const originalSetItem = localStorage.setItem.bind(localStorage);
 localStorage.setItem = function(key, value) {
     originalSetItem(key, value);
+    
+    // If we are syncing from Firestore, do not send back to Firestore
+    if (isSyncing) return;
     
     const syncedCollections = [
         'medicsList', 'codeSystem', 'officialsList', 'leaveRequests', 
