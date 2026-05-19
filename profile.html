@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الملف الشخصي - وزارة الصحة</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="logo.png" type="image/png">
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 50%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .profile-avatar .initials {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .avatar-upload {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+        .avatar-upload:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+        .avatar-upload i {
+            color: white;
+            font-size: 1.2rem;
+        }
+        .profile-info {
+            position: relative;
+            z-index: 1;
+        }
+        .profile-info h2 {
+            margin: 0 0 10px 0;
+            font-weight: 800;
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .profile-info .rank-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+        }
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .profile-card h4 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .profile-card h4 i {
+            margin-left: 10px;
+            color: #667eea;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 700;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+        .warning-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        .warning-badge.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffc107;
+        }
+        .warning-badge.disconnect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #dc3545;
+        }
+        .warning-badge.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #17a2b8;
+        }
+        .warning-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-right: 4px solid #667eea;
+        }
+        .warning-item.warning {
+            border-right-color: #ffc107;
+            background: #fff9e6;
+        }
+        .warning-item.disconnect {
+            border-right-color: #dc3545;
+            background: #ffe6e6;
+        }
+        .warning-item.info {
+            border-right-color: #17a2b8;
+            background: #e6f7ff;
+        }
+        .warning-item .warning-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .warning-item .warning-type {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .warning-item .warning-date {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .warning-item .warning-message {
+            color: #495057;
+            font-size: 0.95rem;
+        }
+        .no-warnings {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .no-warnings i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+        .password-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .password-status.set {
+            background: #d4edda;
+            color: #155724;
+        }
+        .password-status.not-set {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="header-section">
+            <div class="logo-container">
+                <div class="logo-shine"></div>
+                <img src="logo.png" alt="شعار وزارة الصحة" class="ministry-logo">
+            </div>
+            <div class="title-container">
+                <h1>
+                    <span class="title-highlight">الملف الشخصي</span>
+                    <br>
+                    <span class="ministry-name">وزارة الصحة</span>
+                </h1>
+            </div>
+            <div class="admin-controls">
+                <div class="ms-auto">
+                    <a href="index.html" class="btn btn-outline-info me-2">
+                        <i class="fas fa-home"></i> الصفحة الرئيسية
+                    </a>
+                    <a href="login.html" class="btn btn-outline-danger" onclick="localStorage.removeItem('activeMedic'); localStorage.removeItem('activeCode'); localStorage.removeItem('currentUser');">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-container">
+            <div class="profile-header">
+                <div class="profile-avatar" id="profileAvatar">
+                    <span class="initials" id="avatarInitials">--</span>
+                </div>
+                <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                <div class="avatar-upload" onclick="document.getElementById('avatarInput').click();" title="تغيير الصورة">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <div class="profile-info">
+                    <h2 id="profileName">--</h2>
+                    <span class="rank-badge" id="profileRank">--</span>
+                </div>
+            </div>
+
+            <div class="profile-card">
+                <h4><i class="fas fa-user-edit"></i> تعديل البيانات</h4>
+                <form id="profileForm">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">الاسم الكامل</label>
+                        <input type="text" class="form-control" id="editName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCode" class="form-label">الكود</label>
+                        <input type="text" class="form-control" id="editCode" readonly style="background-color: #e9ecef;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRank" class="form-label">الرتبة</label>
+                        <input type="text" class="form-control" id="editRank" readonly style="background-color: #e9ecef;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">حالة كلمة السر</label>
+                        <div>
+                            <span class="password-status" id="passwordStatus">--</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-save w-100">
+                        <i class="fas fa-save me-2"></i> حفظ التعديلات
+                    </button>
+                </form>
+            </div>
+
+            <div class="profile-card">
+                <h4><i class="fas fa-exclamation-triangle"></i> التحذيرات</h4>
+                <div id="warningsList">
+                    <div class="no-warnings">
+                        <i class="fas fa-check-circle d-block"></i>
+                        <p>لا توجد تحذيرات</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            if (!medic && !currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            loadProfile();
+            loadWarnings();
+            
+            document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
+            document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+        });
+
+        function loadProfile() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            let name, code, rank, medicId;
+            
+            if (medic) {
+                name = medic.name || 'مسعف';
+                code = medic.code || 'غير معروف';
+                rank = medic.rank || 'متدرب';
+                medicId = medic.id;
+            } else if (currentUser) {
+                name = currentUser.name || 'مدير';
+                code = currentUser.id || 'admin';
+                rank = currentUser.level === 'minister' ? 'وزير الصحة' : 'نائب وزير الصحة';
+                medicId = currentUser.id;
+            }
+            
+            document.getElementById('profileName').textContent = name;
+            
+            const sideRanks = medic && medic.sideRanks ? medic.sideRanks : [];
+            const sideRanksHtml = sideRanks.length > 0 ? ` ${sideRanks.map(sr => {
+                const icons = {'مسعف طيار': '', 'اجازة الصحة': '', 'مدرب المسعفين': '👨‍️'};
+                return `${icons[sr] || '🏅'} ${sr}`;
+            }).join(' ')}` : '';
+            
+            document.getElementById('profileRank').textContent = rank + sideRanksHtml;
+            document.getElementById('editName').value = name;
+            document.getElementById('editCode').value = code;
+            document.getElementById('editRank').value = rank;
+            
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2);
+            document.getElementById('avatarInitials').textContent = initials;
+            
+            const savedAvatar = localStorage.getItem('avatar_' + medicId);
+            if (savedAvatar) {
+                document.getElementById('profileAvatar').innerHTML = `<img src="${savedAvatar}" alt="صورة البروفايل">`;
+            }
+            
+            const passwordSet = medic ? medic.passwordSet : true;
+            const passwordStatusEl = document.getElementById('passwordStatus');
+            if (passwordSet) {
+                passwordStatusEl.textContent = '✅ تم تعيين كلمة السر';
+                passwordStatusEl.className = 'password-status set';
+            } else {
+                passwordStatusEl.textContent = '❌ لم يتم تعيين كلمة السر';
+                passwordStatusEl.className = 'password-status not-set';
+            }
+        }
+
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                if (typeof showCustomAlert === 'function') {
+                    showCustomAlert(`حجم الصورة كبير جداً (${sizeMB} ميجا).\nالحد الأقصى المسموح: 5 ميجابايت.\nيرجى اختيار صورة أصغر أو ضغطها.`, 'خطأ في الحجم', 'error');
+                } else {
+                    alert(`حجم الصورة كبير جداً (${sizeMB} ميجا).\nالحد الأقصى: 5 ميجابايت.`);
+                }
+                event.target.value = '';
+                return;
+            }
+            
+            if (!file.type.startsWith('image/')) {
+                if (typeof showCustomAlert === 'function') {
+                    showCustomAlert('الملف المختار ليس صورة.\nيرجى اختيار ملف بصيغة PNG أو JPG.', 'نوع ملف خاطئ', 'error');
+                } else {
+                    alert('الملف المختار ليس صورة.');
+                }
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                    const medicId = medic ? medic.id : currentUser.id;
+                    
+                    localStorage.setItem('avatar_' + medicId, e.target.result);
+                    
+                    document.getElementById('profileAvatar').innerHTML = `<img src="${e.target.result}" alt="صورة البروفايل">`;
+                    
+                    if (typeof showCustomAlert === 'function') {
+                        showCustomAlert('✅ تم تحديث صورة البروفايل بنجاح!', 'تم التحديث', 'success');
+                    } else {
+                        alert('تم تحديث صورة البروفايل بنجاح!');
+                    }
+                } catch (err) {
+                    console.error('خطأ في حفظ الصورة:', err);
+                    if (typeof showCustomAlert === 'function') {
+                        showCustomAlert('حدث خطأ أثناء حفظ الصورة.\nقد تكون مساحة التخزين ممتلئة.', 'خطأ', 'error');
+                    } else {
+                        alert('حدث خطأ أثناء حفظ الصورة.');
+                    }
+                }
+            };
+            reader.onerror = function() {
+                if (typeof showCustomAlert === 'function') {
+                    showCustomAlert('فشل في قراءة الملف.\nيرجى المحاولة مرة أخرى.', 'خطأ', 'error');
+                } else {
+                    alert('فشل في قراءة الملف.');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleProfileUpdate(event) {
+            event.preventDefault();
+            
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            if (!medic) {
+                showCustomAlert('لا يمكن تعديل البيانات للمدير', 'تنبيه', 'warning');
+                return;
+            }
+            
+            const newName = document.getElementById('editName').value.trim();
+            if (!newName) {
+                showCustomAlert('الاسم مطلوب', 'تنبيه', 'warning');
+                return;
+            }
+            
+            const medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            const medicIndex = medics.findIndex(m => m.id === medic.id);
+            
+            if (medicIndex === -1) {
+                showCustomAlert('حدث خطأ في تحديث البيانات', 'خطأ', 'error');
+                return;
+            }
+            
+            medics[medicIndex].name = newName;
+            localStorage.setItem('medicsList', JSON.stringify(medics));
+            
+            medic.name = newName;
+            localStorage.setItem('activeMedic', JSON.stringify(medic));
+            
+            document.getElementById('profileName').textContent = newName;
+            
+            const initials = newName.split(' ').map(n => n[0]).join('').substring(0, 2);
+            const avatarEl = document.getElementById('profileAvatar');
+            if (!avatarEl.querySelector('img')) {
+                document.getElementById('avatarInitials').textContent = initials;
+            }
+            
+            showCustomAlert('✅ تم تحديث البيانات بنجاح!', 'تم التحديث', 'success');
+        }
+
+        function loadWarnings() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const medicId = medic ? medic.id : currentUser.id;
+            
+            const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+            const medicWarnings = notifications.filter(n => n.medicId === medicId);
+            
+            const warningsListEl = document.getElementById('warningsList');
+            
+            if (medicWarnings.length === 0) {
+                warningsListEl.innerHTML = `
+                    <div class="no-warnings">
+                        <i class="fas fa-check-circle d-block"></i>
+                        <p>لا توجد تحذيرات</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            medicWarnings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            warningsListEl.innerHTML = medicWarnings.map(warning => {
+                const date = new Date(warning.timestamp);
+                const typeText = warning.type === 'warning' ? 'تحذير' : 
+                                warning.type === 'disconnect' ? 'فصل' : 'معلومة';
+                const typeIcon = warning.type === 'warning' ? 'fa-exclamation-triangle' : 
+                                warning.type === 'disconnect' ? 'fa-ban' : 'fa-info-circle';
+                
+                return `
+                    <div class="warning-item ${warning.type}">
+                        <div class="warning-header">
+                            <span class="warning-type">
+                                <i class="fas ${typeIcon} me-1"></i> ${typeText}
+                            </span>
+                            <span class="warning-date">${date.toLocaleDateString('en-GB')} - ${date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: true})}</span>
+                        </div>
+                        <div class="warning-message">${warning.message}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>

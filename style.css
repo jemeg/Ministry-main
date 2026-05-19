@@ -146,11 +146,6 @@
     mix-blend-mode: overlay;
 }
 
-.logo-container:hover .ministry-logo {
-    transform: scale(1.05);
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)) brightness(1.1);
-}
-
 .logo-container::after {
     content: '';
     position: absolute;
@@ -170,28 +165,6 @@
 
 .logo-container:hover::after {
     opacity: 1;
-}
-
-/* تأثير الإضاءة الدائري */
-.logo-shine {
-    position: absolute;
-    width: 150%;
-    height: 150%;
-    background: conic-gradient(
-        from 0deg,
-        transparent 0%,
-        rgba(231, 76, 60, 0) 20%,
-        rgba(231, 76, 60, 0.8) 45%,
-        rgba(255,255,255,0.9) 50%,
-        rgba(52, 152, 219, 0.8) 55%,
-        rgba(52, 152, 219, 0) 80%,
-        transparent 100%
-    );
-    animation: rotateShine 4s linear infinite;
-    border-radius: 50%;
-    top: -25%;
-    left: -25%;
-    mix-blend-mode: overlay;
 }
 
 @keyframes rotateShine {
@@ -324,11 +297,7 @@
                 0 6px 0 #a93226;
 }
 
-        body {
-            font-family: 'Cairo', sans-serif;
-        }
-
-        .rating i {
+.rating i {
             cursor: pointer;
             font-size: 1.8rem;
             color: #ccc;
@@ -341,10 +310,6 @@
             transform: scale(1.2);
         }
 
-        body {
-            font-family: 'Cairo', sans-serif;
-            background-color: #f8f9fa;
-        }
         .header-section {
             background-color: #007bff;
             color: white;
@@ -1580,13 +1545,9 @@ table:not(.admin-table) td:hover {
         #employeeId {
             color: #ff0000;
             font-size: 0.9em;
-        }
+}
 
-        body {
-            font-family: 'Cairo', sans-serif;
-        }
-
-        .rating i {
+.rating i {
             cursor: pointer;
             font-size: 1.8rem;
             color: rgb(98, 0, 255);
