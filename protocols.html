@@ -187,13 +187,19 @@
     <script src="shared.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('activeMedic') || 'null') || JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('employeeName').textContent = user.name || 'مستخدم';
+            
+            // تحميل البيانات من Firebase في الخلفية
             loadAllFromFirestore().then(function() {
-                const user = JSON.parse(localStorage.getItem('activeMedic') || 'null') || JSON.parse(localStorage.getItem('currentUser') || 'null');
-                if (!user) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                document.getElementById('employeeName').textContent = user.name || 'مستخدم';
+                var user = JSON.parse(localStorage.getItem('activeMedic') || 'null') || JSON.parse(localStorage.getItem('currentUser') || 'null');
+                if (user) document.getElementById('employeeName').textContent = user.name || 'مستخدم';
+            }).catch(function(err) {
+                console.error('Firebase sync error:', err);
             });
         });
     </script>

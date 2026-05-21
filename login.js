@@ -138,8 +138,25 @@ function checkPendingRequest() {
     try {
         var pendingData = localStorage.getItem('pendingRegistration');
         if (pendingData) {
-            document.getElementById('medicRegisterForm').style.display = 'none';
-            document.getElementById('requestPending').style.display = 'block';
+            // التحقق مما إذا كان الطلب قد تمت معالجته من الإدارة
+            var pendingRequests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            var pendingReq = JSON.parse(pendingData);
+            var found = pendingRequests.find(function(r) { return r.id === pendingReq.id; });
+            // إذا كان الطلب موجوداً وحالته معلقة، أظهر شاشة الانتظار
+            if (found && found.status === 'pending') {
+                document.getElementById('medicRegisterForm').style.display = 'none';
+                document.getElementById('requestPending').style.display = 'block';
+            } else {
+                // الطلب تمت معالجته (قبول/رفض) أو لم يعد موجوداً
+                localStorage.removeItem('pendingRegistration');
+                document.getElementById('medicRegisterForm').style.display = 'block';
+                document.getElementById('requestPending').style.display = 'none';
+                if (found && found.status === 'accepted') {
+                    showNotification('تم قبول طلبك', 'تم قبول طلب تسجيلك! يمكنك الآن تسجيل الدخول بالكود وكلمة السر', 'success');
+                } else if (found && found.status === 'rejected') {
+                    showNotification('تم رفض الطلب', 'نأسف، تم رفض طلب تسجيلك. تواصل مع الإدارة للمزيد من المعلومات', 'warning');
+                }
+            }
         } else {
             document.getElementById('medicRegisterForm').style.display = 'block';
             document.getElementById('requestPending').style.display = 'none';
@@ -178,19 +195,24 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // ربط النماذج
+    var loginForm = document.getElementById('medicLoginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+
+    var registerForm = document.getElementById('medicRegisterForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+    }
+
+    checkPendingRequest();
+    
+    // تحميل البيانات من Firebase في الخلفية
     loadAllFromFirestore().then(function() {
-        // ربط النماذج
-        var loginForm = document.getElementById('medicLoginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', handleLogin);
-        }
-
-        var registerForm = document.getElementById('medicRegisterForm');
-        if (registerForm) {
-            registerForm.addEventListener('submit', handleRegister);
-        }
-
         checkPendingRequest();
+    }).catch(function(err) {
+        console.error('Firebase sync error:', err);
     });
 });
 

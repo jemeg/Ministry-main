@@ -987,7 +987,7 @@
                                     <i class="fas fa-th me-2" style="color: #667eea;"></i>معرض الشارات
                                 </h6>
                                 <div class="row g-2" id="badgeGalleryGrid">
-                                    <div class="col-3 col-md-4" onclick="selectBadgeFromGallery('Badge1.png')" style="cursor: pointer;">
+                                    <div class="col-3 col-md-4" onclick="selectBadgeFromGallery('Badge1.png', this)" style="cursor: pointer;">
                                         <div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; transition: all 0.3s ease;">
                                             <img src="Badge1.png" alt="متدرب" style="width: 100%; height: 60px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                             <div style="display: none; width: 100%; height: 60px; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; color: #6c757d; font-size: 0.7rem;">Badge1</div>
@@ -1472,39 +1472,49 @@
     <script src="shared.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!currentUser || currentUser.type !== 'admin') {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            document.getElementById('adminName').textContent = currentUser.name || 'المدير';
+            document.getElementById('adminRole').textContent = currentUser.role || (currentUser.level === 'minister' ? 'وزير الصحة' : 'نائب وزير الصحة');
+            
+            if (currentUser.level === 'minister') {
+                document.getElementById('addOfficialBtnContainer').classList.remove('d-none');
+            }
+            if (document.getElementById('addOfficialRoleLabel')) {
+                document.getElementById('addOfficialRoleLabel').textContent = currentUser.role || 'وزير الصحة';
+            }
+            
+            const today = new Date();
+            document.getElementById('todayDate').textContent = today.toLocaleDateString('en-GB');
+            
+            applyPermissions();
+            loadOfficialsList();
+            loadDashboard();
+            loadMedicsList();
+            loadMedicSelect();
+            loadRequests();
+            
+            setupRealtimeListeners();
+            
+            setInterval(() => {
+                loadRequests();
+                loadDashboard();
+            }, 5000);
+            
+            // تحميل البيانات من Firebase في الخلفية (لا يمنع تحميل الصفحة)
             loadAllFromFirestore().then(function() {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                if (!currentUser || currentUser.type !== 'admin') {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                document.getElementById('adminName').textContent = currentUser.name || 'المدير';
-                document.getElementById('adminRole').textContent = currentUser.role || (currentUser.level === 'minister' ? 'وزير الصحة' : 'نائب وزير الصحة');
-                
-                if (currentUser.level === 'minister') {
-                    document.getElementById('addOfficialBtnContainer').classList.remove('d-none');
-                }
-                if (document.getElementById('addOfficialRoleLabel')) {
-                    document.getElementById('addOfficialRoleLabel').textContent = currentUser.role || 'وزير الصحة';
-                }
-                
-                const today = new Date();
-                document.getElementById('todayDate').textContent = today.toLocaleDateString('en-GB');
-                
-                applyPermissions();
+                // إعادة تحميل البيانات بعد التحديث من Firebase
                 loadOfficialsList();
                 loadDashboard();
                 loadMedicsList();
                 loadMedicSelect();
                 loadRequests();
-                
-                setupRealtimeListeners();
-                
-                setInterval(() => {
-                    loadRequests();
-                    loadDashboard();
-                }, 5000);
+            }).catch(function(err) {
+                console.error('Firebase sync error:', err);
             });
         });
 
@@ -2207,7 +2217,8 @@
         }
 
         function loadRequests() {
-            const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            var requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            if (!Array.isArray(requests)) requests = [];
             const container = document.getElementById('requestsList');
             const pendingRequests = requests.filter(r => r.status === 'pending');
             
@@ -2257,9 +2268,16 @@
         }
 
         function acceptRequest(requestId) {
-            const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
-            const reqIndex = requests.findIndex(r => r.id === requestId);
-            if (reqIndex === -1) return;
+            var requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            if (!Array.isArray(requests)) requests = [];
+            var reqIndex = -1;
+            for (var i = 0; i < requests.length; i++) {
+                if (requests[i].id === requestId) { reqIndex = i; break; }
+            }
+            if (reqIndex === -1) {
+                showCustomAlert('لم يتم العثور على الطلب. قد يكون تمت معالجته مسبقاً', 'خطأ', 'error');
+                return;
+            }
             
             const req = requests[reqIndex];
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -2297,7 +2315,8 @@
             const confirmed = await showCustomConfirm('هل أنت متأكد من رفض هذا الطلب؟', 'تأكيد الرفض');
             if (!confirmed) return;
             
-            const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            var requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            if (!Array.isArray(requests)) requests = [];
             const reqIndex = requests.findIndex(r => r.id === requestId);
             if (reqIndex === -1) return;
             
@@ -2326,7 +2345,8 @@
         }
 
         function loadRequestsHistory() {
-            const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            var requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            if (!Array.isArray(requests)) requests = [];
             const tbody = document.getElementById('requestsHistoryBody');
             
             const processedRequests = requests.filter(r => r.status === 'accepted' || r.status === 'rejected');
@@ -2783,7 +2803,7 @@
             reader.readAsDataURL(file);
         }
 
-        function selectBadgeFromGallery(badgeFile) {
+        function selectBadgeFromGallery(badgeFile, element) {
             const rank = document.getElementById('badgeRankSelect').value;
             if (!rank) { showCustomAlert('اختر رتبة أولاً', 'تنبيه', 'warning'); return; }
             
@@ -2794,10 +2814,15 @@
                 el.style.borderColor = '#dee2e6';
                 el.style.boxShadow = 'none';
             });
-            event.currentTarget.querySelector('.badge-gallery-item').style.borderColor = '#28a745';
-            event.currentTarget.querySelector('.badge-gallery-item').style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.3)';
+            if (element) {
+                var item = element.querySelector('.badge-gallery-item');
+                if (item) {
+                    item.style.borderColor = '#28a745';
+                    item.style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.3)';
+                }
+            }
             
-            showCustomAlert(`✅ تم تعيين "${badgeFile}" كشارة لرتبة "${rank}"!`, 'تم التعيين', 'success');
+            showCustomAlert('✅ تم تعيين "' + badgeFile + '" كشارة لرتبة "' + rank + '"!', 'تم التعيين', 'success');
         }
 
         function loadPromotionsHistory() {
@@ -3059,7 +3084,8 @@
                 return;
             }
 
-            const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            var requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+            if (!Array.isArray(requests)) requests = [];
             const processedRequests = requests.filter(r => r.status === 'accepted' || r.status === 'rejected');
             
             if (processedRequests.length === 0) {

@@ -317,20 +317,26 @@
     <script src="shared.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            if (!medic && !currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            loadProfile();
+            loadWarnings();
+            
+            document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
+            document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+            
+            // تحميل البيانات من Firebase في الخلفية
             loadAllFromFirestore().then(function() {
-                const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                
-                if (!medic && !currentUser) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
                 loadProfile();
                 loadWarnings();
-                
-                document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
-                document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+            }).catch(function(err) {
+                console.error('Firebase sync error:', err);
             });
         });
 

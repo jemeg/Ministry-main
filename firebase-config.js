@@ -61,7 +61,7 @@ async function syncLocalStorageToFirestore() {
     if (!isFirebaseReady) return;
     const collections = [
         'medicsList', 'codeSystem', 'officialsList', 'leaveRequests', 
-        'suggestions', 'promotionsHistory', 'warnings', 'pendingRequests', 'notifications'
+        'suggestions', 'promotionsHistory', 'pendingRequests', 'notifications'
     ];
 
     for (const key of collections) {
@@ -81,7 +81,7 @@ async function loadAllFromFirestore() {
     }
     const collections = [
         'medicsList', 'codeSystem', 'officialsList', 'leaveRequests', 
-        'suggestions', 'promotionsHistory', 'warnings', 'pendingRequests', 'notifications'
+        'suggestions', 'promotionsHistory', 'pendingRequests', 'notifications'
     ];
 
     for (const key of collections) {
@@ -98,7 +98,9 @@ function listenToCollection(collection, callback) {
     if (!isFirebaseReady || !db) return;
     db.collection(collection).doc('data').onSnapshot((doc) => {
         if (doc.exists) {
-            const data = doc.data();
+            var raw = doc.data();
+            // Unwrap array if saved as { __arr: [...] }
+            var data = (raw && raw.__arr && Array.isArray(raw.__arr)) ? raw.__arr : raw;
             isSyncing = true;
             localStorage.setItem(collection, JSON.stringify(data));
             isSyncing = false;
@@ -121,6 +123,7 @@ function setupRealtimeListeners() {
             if (collection === 'suggestions' && typeof loadAdminSuggestions === 'function') loadAdminSuggestions();
             if (collection === 'pendingRequests' && typeof loadRequests === 'function') loadRequests();
             if (collection === 'pendingRequests' && typeof loadRequestsHistory === 'function') loadRequestsHistory();
+            if (collection === 'notifications' && typeof loadActiveWarnings === 'function') loadActiveWarnings();
         });
     });
 }
@@ -135,7 +138,7 @@ localStorage.setItem = function(key, value) {
     
     const syncedCollections = [
         'medicsList', 'codeSystem', 'officialsList', 'leaveRequests', 
-        'suggestions', 'promotionsHistory', 'warnings', 'pendingRequests', 'notifications'
+        'suggestions', 'promotionsHistory', 'pendingRequests', 'notifications'
     ];
     
     if (syncedCollections.includes(key)) {
