@@ -32,19 +32,27 @@ if (typeof firebase !== 'undefined') {
 async function saveToFirestore(collection, data) {
     if (!isFirebaseReady || !db || isSyncing) return;
     try {
-        await db.collection(collection).doc('data').set(data);
+        // Firestore set() requires an object, not an array
+        var payload = Array.isArray(data) ? { __arr: data } : data;
+        await db.collection(collection).doc('data').set(payload);
     } catch (error) {
-        console.error(`Sync error (${collection}):`, error);
+        console.error('Sync error (' + collection + '):', error);
     }
 }
 
 async function loadFromFirestore(collection) {
     if (!isFirebaseReady || !db) return null;
     try {
-        const doc = await db.collection(collection).doc('data').get();
-        return doc.exists ? doc.data() : null;
+        var doc = await db.collection(collection).doc('data').get();
+        if (!doc.exists) return null;
+        var data = doc.data();
+        // Unwrap array if it was saved wrapped
+        if (data && data.__arr && Array.isArray(data.__arr)) {
+            return data.__arr;
+        }
+        return data;
     } catch (error) {
-        console.error(`Load error (${collection}):`, error);
+        console.error('Load error (' + collection + '):', error);
         return null;
     }
 }
