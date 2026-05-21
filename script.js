@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('employeeId').textContent = 'كود: ' + (medic.code || 'غير معروف');
     } else if (currentUser) {
         document.getElementById('employeeName').textContent = currentUser.name || 'مدير';
-        document.getElementById('employeeId').textContent = 'كود: ' + (currentUser.id || 'admin');
+        document.getElementById('employeeId').textContent = 'كود: ' + (currentUser.code || currentUser.id || 'admin');
     }
     
     if (currentUser && currentUser.type === 'admin') {

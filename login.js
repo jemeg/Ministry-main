@@ -217,10 +217,11 @@ function handleLogin(e) {
         localStorage.removeItem('activeCode');
 
         // دخول المدير
-        if (code === 'admin' && password === 'Qir5hoon__1998') {
+        if (code === 'Admin' && password === 'Qir5hoon__1998') {
             localStorage.setItem('currentUser', JSON.stringify({
                 id: 'admin-' + Date.now(),
                 username: 'admin',
+                code: 'H-1',
                 name: 'وزير الصحة',
                 type: 'admin',
                 level: 'minister',
