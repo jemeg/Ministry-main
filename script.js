@@ -36,14 +36,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function getBadgeSVG(rank) {
-    const savedBadge = localStorage.getItem('badge_' + rank);
-    if (savedBadge) {
-        if (savedBadge.startsWith('data:')) {
-            return `<img src="${savedBadge}" alt="${rank}" style="width: 50px; height: 50px; object-fit: contain;">`;
-        } else {
-            return `<img src="${savedBadge}" alt="${rank}" style="width: 50px; height: 50px; object-fit: contain;">`;
+function getBadgeSVG(rank, medicId) {
+    // تحقق من وجود شارة خاصة للمسعف
+    if (medicId) {
+        var medicBadge = localStorage.getItem('medicBadge_' + medicId);
+        if (medicBadge) {
+            var badgeSrc = medicBadge.startsWith('data:') ? medicBadge : medicBadge;
+            return '<img src="' + badgeSrc + '" alt="' + (rank || '') + '" style="width: 50px; height: 50px; object-fit: contain;">';
         }
+    }
+    var savedBadge = localStorage.getItem('badge_' + rank);
+    if (savedBadge) {
+        var badgeSrc = savedBadge.startsWith('data:') ? savedBadge : savedBadge;
+        return '<img src="' + badgeSrc + '" alt="' + (rank || '') + '" style="width: 50px; height: 50px; object-fit: contain;">';
     }
     
     const rankLower = (rank || '').toLowerCase();
@@ -112,7 +117,7 @@ function loadMedics() {
             ? `<img src="${avatarSrc}" alt="${medic.name}" class="medic-avatar">`
             : `<div class="medic-avatar-placeholder">${initials}</div>`;
         
-        const rankBadgeHtml = getBadgeSVG(medic.rank || 'متدرب');
+        const rankBadgeHtml = getBadgeSVG(medic.rank || 'متدرب', medic.id);
         
         let warningIndicator = '';
         if (hasDisconnect) {

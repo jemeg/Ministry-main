@@ -317,26 +317,20 @@
     <script src="shared.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-            
-            if (!medic && !currentUser) {
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            loadProfile();
-            loadWarnings();
-            
-            document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
-            document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
-            
-            // تحميل البيانات من Firebase في الخلفية
             loadAllFromFirestore().then(function() {
+                const medic = JSON.parse(localStorage.getItem('activeMedic') || 'null');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                
+                if (!medic && !currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
                 loadProfile();
                 loadWarnings();
-            }).catch(function(err) {
-                console.error('Firebase sync error:', err);
+                
+                document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
+                document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
             });
         });
 
@@ -366,7 +360,14 @@
                 return `${icons[sr] || '🏅'} ${sr}`;
             }).join(' ')}` : '';
             
-            document.getElementById('profileRank').textContent = rank + sideRanksHtml;
+            var badgeHtml = '';
+            if (medicId) {
+                var personalBadge = localStorage.getItem('medicBadge_' + medicId);
+                if (personalBadge) {
+                    badgeHtml = '<img src="' + personalBadge + '" alt="شارة" style="width: 40px; height: 40px; object-fit: contain; margin-left: 10px;">';
+                }
+            }
+            document.getElementById('profileRank').innerHTML = badgeHtml + rank + sideRanksHtml;
             document.getElementById('editName').value = name;
             document.getElementById('editCode').value = code;
             document.getElementById('editRank').value = rank;

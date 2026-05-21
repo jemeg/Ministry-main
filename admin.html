@@ -939,6 +939,20 @@
                                     <label for="promotionReason" class="form-label">سبب الترقية (اختياري)</label>
                                     <textarea class="form-control" id="promotionReason" rows="2" placeholder="اكتب سبب الترقية..."></textarea>
                                 </div>
+                                <div class="mb-3">
+                                    <label class="form-label">الشارة</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div id="promotionBadgeDisplay" class="p-2 rounded" style="background: #f8f9fa; text-align: center; min-width: 60px; min-height: 60px; display: flex; align-items: center; justify-content: center; border: 2px dashed #dee2e6;">
+                                            <span style="color: #6c757d; font-size: 0.75rem;">بدون شارة</span>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openPromotionBadgeSelector()" style="border-radius: 8px;">
+                                            <i class="fas fa-image me-1"></i> اختيار شارة
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearPromotionBadge()" style="border-radius: 8px;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <button class="btn btn-success w-100" onclick="promoteMedic()" style="padding: 12px; border-radius: 10px; font-weight: 700;">
                                     <i class="fas fa-arrow-up me-2"></i> ترقية
                                 </button>
@@ -951,6 +965,12 @@
                                 <h5 class="mb-4" style="font-weight: 700; color: #2c3e50;">
                                     <i class="fas fa-images me-2" style="color: #667eea;"></i>إدارة الشارات
                                 </h5>
+                                <div class="mb-3">
+                                    <label for="badgeMedicSelect" class="form-label">أو اختر مسعف (لإعطائه شارة شخصية)</label>
+                                    <select class="form-control" id="badgeMedicSelect" onchange="showCurrentBadge()">
+                                        <option value="">-- اختر مسعف --</option>
+                                    </select>
+                                </div>
                                 <div class="mb-3">
                                     <label for="badgeRankSelect" class="form-label">اختر الرتبة</label>
                                     <select class="form-control" id="badgeRankSelect" onchange="showCurrentBadge()">
@@ -972,7 +992,7 @@
                                 <div class="mb-3 text-center">
                                     <label class="form-label">الشارة الحالية</label>
                                     <div id="currentBadgeDisplay" class="p-3 rounded" style="background: #f8f9fa; min-height: 100px; display: flex; align-items: center; justify-content: center;">
-                                        <span style="color: #6c757d;">اختر رتبة لعرض الشارة</span>
+                                        <span style="color: #6c757d;">اختر مسعفاً أو رتبة لعرض الشارة</span>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -980,7 +1000,7 @@
                                     <input type="file" class="form-control" id="badgeUpload" accept="image/png,image/jpeg,image/webp">
                                 </div>
                                 <button class="btn btn-primary w-100" onclick="uploadBadge()" style="padding: 12px; border-radius: 10px; font-weight: 700;">
-                                    <i class="fas fa-upload me-2"></i> حفظ الشارة
+                                    <i class="fas fa-upload me-2"></i> حفظ الشارة للرتبة
                                 </button>
                                 <hr class="my-4">
                                 <h6 class="mb-3" style="font-weight: 700; color: #2c3e50;">
@@ -1351,6 +1371,56 @@
         </div>
     </div>
 
+    <div class="modal fade" id="medicBadgeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                    <h5 class="modal-title"><i class="fas fa-image me-2"></i> اختيار شارة للمسعف</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 25px;">
+                    <input type="hidden" id="medicBadgeTargetId" value="">
+                    <input type="hidden" id="medicBadgeContext" value="">
+                    <div class="text-center mb-3">
+                        <div id="medicBadgePreview" class="mx-auto p-3 rounded" style="background: #f8f9fa; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; border: 2px dashed #dee2e6;">
+                            <span style="color: #6c757d; font-size: 0.8rem;">الشارة الحالية</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="mb-3" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-th me-2" style="color: #667eea;"></i>اختر من المعرض</h6>
+                    <div class="row g-2 mb-3" id="badgeModalGallery">
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge1.png', this)"><img src="Badge1.png" alt="متدرب" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">متدرب</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge2.png', this)"><img src="Badge2.png" alt="طالب طب" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">طالب طب</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge3.png', this)"><img src="Badge3.png" alt="مسعف" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">مسعف</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge4.png', this)"><img src="Badge4.png" alt="مسعف أول" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">مسعف أول</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge5.png', this)"><img src="Badge5.png" alt="مسعف ميداني" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">مسعف ميداني</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge6.png', this)"><img src="Badge6.png" alt="طبيب اخصائي" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">طبيب اخصائي</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge7.png', this)"><img src="Badge7.png" alt="طبيب استشاري" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">طبيب استشاري</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge8.png', this)"><img src="Badge8.png" alt="طبيب ميداني" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">طبيب ميداني</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge9.png', this)"><img src="Badge9.png" alt="بروفسور" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">بروفسور</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge10.png', this)"><img src="Badge10.png" alt="رئيس مسعفين" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">رئيس مسعفين</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge11.png', this)"><img src="Badge11.png" alt="مشرف ميداني" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">مشرف ميداني</small></div></div>
+                        <div class="col-3 col-md-4"><div class="badge-gallery-item" style="border: 2px solid #dee2e6; border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="selectModalBadge('Badge12.png', this)"><img src="Badge12.png" alt="مشرف عام" style="width: 100%; height: 50px; object-fit: contain;"><small class="d-block mt-1" style="color: #495057; font-size: 0.7rem;">مشرف عام</small></div></div>
+                    </div>
+                    <hr>
+                    <h6 class="mb-3" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-upload me-2" style="color: #28a745;"></i>أو رفع شارة مخصصة</h6>
+                    <div class="mb-3">
+                        <input type="file" class="form-control" id="medicBadgeUpload" accept="image/png,image/jpeg,image/webp" onchange="uploadModalBadge(this)">
+                        <small class="text-muted">أقصى حجم 500 كيلوبايت - PNG, JPG, WebP</small>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 15px 25px;">
+                    <button type="button" class="btn btn-outline-danger" onclick="clearMedicBadge()" style="border-radius: 10px; font-weight: 700;">
+                        <i class="fas fa-trash me-1"></i> إزالة الشارة
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="saveMedicBadge()" style="border-radius: 10px; font-weight: 700;">
+                        <i class="fas fa-check me-1"></i> حفظ الشارة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="addOfficialModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -1559,6 +1629,7 @@
             if (sectionId === 'promotions') {
                 loadPromotionMedicSelect();
                 loadBadgesRankSelect();
+                loadBadgeMedicSelect();
                 loadSideRankMedicSelect();
                 loadAllSideRanks();
             }
@@ -2198,6 +2269,9 @@
                             <button class="btn btn-sm btn-warning" onclick="resetMedicPassword('${medic.id}')" style="padding: 8px 20px; border-radius: 10px;">
                                 <i class="fas fa-key me-1"></i> إعادة تعيين كلمة السر
                             </button>
+                            <button class="btn btn-sm btn-primary" onclick="changeMedicBadge('${medic.id}')" style="padding: 8px 20px; border-radius: 10px;">
+                                <i class="fas fa-image me-1"></i> الشارة
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2728,6 +2802,16 @@
             }
             
             medics[medicIndex].rank = newRank;
+            
+            // حفظ الشارة المختارة مع المسعف أثناء الترقية
+            if (_selectedMedicBadge) {
+                localStorage.setItem('medicBadge_' + medicId, _selectedMedicBadge);
+                medics[medicIndex].medicBadge = _selectedMedicBadge;
+                _selectedMedicBadge = null;
+                var promoDisplay = document.getElementById('promotionBadgeDisplay');
+                promoDisplay.innerHTML = '<span style="color: #6c757d; font-size: 0.75rem;">بدون شارة</span>';
+            }
+            
             localStorage.setItem('medicsList', JSON.stringify(medics));
             
             const promotions = JSON.parse(localStorage.getItem('promotionsHistory') || '[]');
@@ -2747,8 +2831,158 @@
             loadPromotionMedicSelect();
             loadPromotionsHistory();
             showCurrentRank();
+            loadMedicsList();
             
-            showCustomAlert(`✅ تم ترقية ${medics[medicIndex].name} بنجاح!\n\nمن: ${oldRank}\nإلى: ${newRank}`, 'تمت الترقية', 'success');
+            showCustomAlert('✅ تم ترقية ' + medics[medicIndex].name + ' بنجاح!\n\nمن: ' + oldRank + '\nإلى: ' + newRank, 'تمت الترقية', 'success');
+        }
+
+        // ===== متغيرات وأدوات الشارة الفردية للمسعف =====
+        var _selectedMedicBadge = null;
+
+        function changeMedicBadge(medicId) {
+            _selectedMedicBadge = null;
+            document.getElementById('medicBadgeTargetId').value = medicId;
+            document.getElementById('medicBadgeContext').value = 'standalone';
+            document.getElementById('medicBadgeUpload').value = '';
+            // عرض الشارة الحالية إن وجدت
+            var currentBadge = localStorage.getItem('medicBadge_' + medicId);
+            var preview = document.getElementById('medicBadgePreview');
+            if (currentBadge) {
+                preview.innerHTML = '<img src="' + currentBadge + '" alt="الشارة الحالية" style="max-width: 80px; max-height: 80px; border-radius: 8px;">';
+            } else {
+                preview.innerHTML = '<span style="color: #6c757d; font-size: 0.8rem;">بدون شارة</span>';
+            }
+            // إزالة التحديد من المعرض
+            document.querySelectorAll('#badgeModalGallery .badge-gallery-item').forEach(function(el) {
+                el.style.borderColor = '#dee2e6';
+                el.style.boxShadow = 'none';
+            });
+            new bootstrap.Modal(document.getElementById('medicBadgeModal')).show();
+        }
+
+        function openPromotionBadgeSelector() {
+            _selectedMedicBadge = null;
+            document.getElementById('medicBadgeTargetId').value = '';
+            document.getElementById('medicBadgeContext').value = 'promotion';
+            document.getElementById('medicBadgeUpload').value = '';
+            var preview = document.getElementById('medicBadgePreview');
+            preview.innerHTML = '<span style="color: #6c757d; font-size: 0.8rem;">اختر شارة</span>';
+            document.querySelectorAll('#badgeModalGallery .badge-gallery-item').forEach(function(el) {
+                el.style.borderColor = '#dee2e6';
+                el.style.boxShadow = 'none';
+            });
+            new bootstrap.Modal(document.getElementById('medicBadgeModal')).show();
+        }
+
+        function selectModalBadge(badgeFile, element) {
+            _selectedMedicBadge = badgeFile;
+            // تحديث المعاينة
+            var preview = document.getElementById('medicBadgePreview');
+            preview.innerHTML = '<img src="' + badgeFile + '" alt="الشارة المختارة" style="max-width: 80px; max-height: 80px; border-radius: 8px;">';
+            // إزالة التحديد من الكل
+            document.querySelectorAll('#badgeModalGallery .badge-gallery-item').forEach(function(el) {
+                el.style.borderColor = '#dee2e6';
+                el.style.boxShadow = 'none';
+            });
+            // تحديد العنصر المختار
+            if (element) {
+                element.style.borderColor = '#28a745';
+                element.style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.3)';
+            }
+        }
+
+        function uploadModalBadge(input) {
+            var file = input.files[0];
+            if (!file) return;
+            if (file.size > 500 * 1024) {
+                showCustomAlert('حجم الصورة كبير جداً. الحد الأقصى 500 كيلوبايت', 'خطأ', 'error');
+                input.value = '';
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                _selectedMedicBadge = e.target.result;
+                var preview = document.getElementById('medicBadgePreview');
+                preview.innerHTML = '<img src="' + e.target.result + '" alt="الشارة المرفوعة" style="max-width: 80px; max-height: 80px; border-radius: 8px;">';
+                document.querySelectorAll('#badgeModalGallery .badge-gallery-item').forEach(function(el) {
+                    el.style.borderColor = '#dee2e6';
+                    el.style.boxShadow = 'none';
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearMedicBadge() {
+            var targetId = document.getElementById('medicBadgeTargetId').value;
+            var context = document.getElementById('medicBadgeContext').value;
+            if (targetId && context === 'standalone') {
+                localStorage.removeItem('medicBadge_' + targetId);
+                var medicsList = JSON.parse(localStorage.getItem('medicsList') || '[]');
+                var idx = medicsList.findIndex(function(m) { return m.id === targetId; });
+                if (idx !== -1 && medicsList[idx].medicBadge) {
+                    delete medicsList[idx].medicBadge;
+                    localStorage.setItem('medicsList', JSON.stringify(medicsList));
+                }
+                loadMedicsList();
+            }
+            _selectedMedicBadge = null;
+            var preview = document.getElementById('medicBadgePreview');
+            preview.innerHTML = '<span style="color: #6c757d; font-size: 0.8rem;">بدون شارة</span>';
+            document.querySelectorAll('#badgeModalGallery .badge-gallery-item').forEach(function(el) {
+                el.style.borderColor = '#dee2e6';
+                el.style.boxShadow = 'none';
+            });
+            bootstrap.Modal.getInstance(document.getElementById('medicBadgeModal')).hide();
+            showCustomAlert('✅ تم إزالة الشارة بنجاح', 'تم', 'success');
+        }
+
+        function saveMedicBadge() {
+            var targetId = document.getElementById('medicBadgeTargetId').value;
+            var context = document.getElementById('medicBadgeContext').value;
+            
+            if (!_selectedMedicBadge) {
+                showCustomAlert('اختر شارة أولاً', 'تنبيه', 'warning');
+                return;
+            }
+            
+            if (context === 'promotion') {
+                // حفظ مؤقت للشارة لحين تنفيذ الترقية
+                var promoDisplay = document.getElementById('promotionBadgeDisplay');
+                promoDisplay.innerHTML = '<img src="' + _selectedMedicBadge + '" alt="الشارة" style="max-width: 50px; max-height: 50px; border-radius: 6px;">';
+                bootstrap.Modal.getInstance(document.getElementById('medicBadgeModal')).hide();
+                showCustomAlert('✅ تم اختيار الشارة. اضغط "ترقية" للحفظ', 'تم', 'success');
+                return;
+            }
+            
+            // حفظ الشارة للمسعف مباشرة
+            var badgeValue = _selectedMedicBadge;
+            localStorage.setItem('medicBadge_' + targetId, badgeValue);
+            
+            var medicsList = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            var idx = medicsList.findIndex(function(m) { return m.id === targetId; });
+            if (idx !== -1) {
+                medicsList[idx].medicBadge = badgeValue;
+                localStorage.setItem('medicsList', JSON.stringify(medicsList));
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('medicBadgeModal')).hide();
+            loadMedicsList();
+            showCustomAlert('✅ تم حفظ الشارة بنجاح', 'تم', 'success');
+        }
+
+        function clearPromotionBadge() {
+            var promoDisplay = document.getElementById('promotionBadgeDisplay');
+            promoDisplay.innerHTML = '<span style="color: #6c757d; font-size: 0.75rem;">بدون شارة</span>';
+            showCustomAlert('تم إلغاء اختيار الشارة', 'تم', 'info');
+        }
+
+        function loadBadgeMedicSelect() {
+            var medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+            var select = document.getElementById('badgeMedicSelect');
+            select.innerHTML = '<option value="">-- اختر مسعف --</option>' +
+                medics.map(function(m) {
+                    return '<option value="' + m.id + '">' + m.name + ' (' + m.code + ') - ' + (m.rank || 'متدرب') + '</option>';
+                }).join('');
         }
 
         function loadBadgesRankSelect() {
@@ -2759,33 +2993,45 @@
         }
 
         function showCurrentBadge() {
-            const rank = document.getElementById('badgeRankSelect').value;
-            const display = document.getElementById('currentBadgeDisplay');
+            var medicId = document.getElementById('badgeMedicSelect').value;
+            var rank = document.getElementById('badgeRankSelect').value;
+            var display = document.getElementById('currentBadgeDisplay');
             
-            if (!rank) {
-                display.innerHTML = '<span style="color: #6c757d;">اختر رتبة لعرض الشارة</span>';
+            // عرض شارة المسعف الشخصية إذا كان محدداً
+            if (medicId) {
+                var medicBadge = localStorage.getItem('medicBadge_' + medicId);
+                if (medicBadge) {
+                    display.innerHTML = '<img src="' + medicBadge + '" alt="شارة المسعف" style="max-width: 120px; max-height: 120px; border-radius: 10px;">';
+                } else {
+                    var medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+                    var medic = medics.find(function(m) { return m.id === medicId; });
+                    display.innerHTML = '<span style="color: #6c757d;">' + (medic ? medic.name : 'المسعف') + ' ليس لديه شارة شخصية</span>';
+                }
                 return;
             }
             
-            const savedBadge = localStorage.getItem('badge_' + rank);
+            if (!rank) {
+                display.innerHTML = '<span style="color: #6c757d;">اختر مسعفاً أو رتبة لعرض الشارة</span>';
+                return;
+            }
+            
+            var savedBadge = localStorage.getItem('badge_' + rank);
             
             if (savedBadge) {
-                let badgeSrc = savedBadge;
-                if (!savedBadge.startsWith('data:')) {
-                    badgeSrc = savedBadge;
-                }
-                display.innerHTML = `<img src="${badgeSrc}" alt="شارة ${rank}" style="max-width: 120px; max-height: 120px; border-radius: 10px;">`;
+                var badgeSrc = savedBadge;
+                display.innerHTML = '<img src="' + badgeSrc + '" alt="شارة ' + rank + '" style="max-width: 120px; max-height: 120px; border-radius: 10px;">';
             } else {
-                display.innerHTML = `<span style="color: #6c757d;">لا توجد شارة محفوظة للرتبة: ${rank}</span>`;
+                display.innerHTML = '<span style="color: #6c757d;">لا توجد شارة محفوظة للرتبة: ' + rank + '</span>';
             }
         }
 
         function uploadBadge() {
-            const rank = document.getElementById('badgeRankSelect').value;
-            const fileInput = document.getElementById('badgeUpload');
-            const file = fileInput.files[0];
+            var medicId = document.getElementById('badgeMedicSelect').value;
+            var rank = document.getElementById('badgeRankSelect').value;
+            var fileInput = document.getElementById('badgeUpload');
+            var file = fileInput.files[0];
             
-            if (!rank) { showCustomAlert('اختر رتبة أولاً', 'تنبيه', 'warning'); return; }
+            if (!medicId && !rank) { showCustomAlert('اختر مسعفاً أو رتبة أولاً', 'تنبيه', 'warning'); return; }
             if (!file) { showCustomAlert('اختر صورة الشارة', 'تنبيه', 'warning'); return; }
             
             if (file.size > 500 * 1024) {
@@ -2793,24 +3039,37 @@
                 return;
             }
             
-            const reader = new FileReader();
+            var reader = new FileReader();
             reader.onload = function(e) {
-                localStorage.setItem('badge_' + rank, e.target.result);
+                var badgeData = e.target.result;
+                if (medicId) {
+                    // حفظ شارة شخصية للمسعف
+                    localStorage.setItem('medicBadge_' + medicId, badgeData);
+                    var medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+                    var idx = medics.findIndex(function(m) { return m.id === medicId; });
+                    if (idx !== -1) {
+                        medics[idx].medicBadge = badgeData;
+                        localStorage.setItem('medicsList', JSON.stringify(medics));
+                    }
+                    loadMedicsList();
+                    showCustomAlert('✅ تم حفظ الشارة الشخصية للمسعف بنجاح!', 'تم الحفظ', 'success');
+                } else {
+                    localStorage.setItem('badge_' + rank, badgeData);
+                    showCustomAlert('✅ تم حفظ شارة رتبة "' + rank + '" بنجاح!', 'تم الحفظ', 'success');
+                }
                 showCurrentBadge();
                 fileInput.value = '';
-                showCustomAlert(`✅ تم حفظ شارة رتبة "${rank}" بنجاح!`, 'تم الحفظ', 'success');
             };
             reader.readAsDataURL(file);
         }
 
         function selectBadgeFromGallery(badgeFile, element) {
-            const rank = document.getElementById('badgeRankSelect').value;
-            if (!rank) { showCustomAlert('اختر رتبة أولاً', 'تنبيه', 'warning'); return; }
+            var medicId = document.getElementById('badgeMedicSelect').value;
+            var rank = document.getElementById('badgeRankSelect').value;
             
-            localStorage.setItem('badge_' + rank, badgeFile);
-            showCurrentBadge();
+            if (!medicId && !rank) { showCustomAlert('اختر مسعفاً أو رتبة أولاً', 'تنبيه', 'warning'); return; }
             
-            document.querySelectorAll('#badgeGalleryGrid .badge-gallery-item').forEach(el => {
+            document.querySelectorAll('#badgeGalleryGrid .badge-gallery-item').forEach(function(el) {
                 el.style.borderColor = '#dee2e6';
                 el.style.boxShadow = 'none';
             });
@@ -2822,7 +3081,23 @@
                 }
             }
             
-            showCustomAlert('✅ تم تعيين "' + badgeFile + '" كشارة لرتبة "' + rank + '"!', 'تم التعيين', 'success');
+            if (medicId) {
+                // حفظ شارة شخصية للمسعف
+                localStorage.setItem('medicBadge_' + medicId, badgeFile);
+                var medics = JSON.parse(localStorage.getItem('medicsList') || '[]');
+                var idx = medics.findIndex(function(m) { return m.id === medicId; });
+                if (idx !== -1) {
+                    medics[idx].medicBadge = badgeFile;
+                    localStorage.setItem('medicsList', JSON.stringify(medics));
+                }
+                loadMedicsList();
+                showCurrentBadge();
+                showCustomAlert('✅ تم تعيين الشارة للمسعف بنجاح!', 'تم التعيين', 'success');
+            } else {
+                localStorage.setItem('badge_' + rank, badgeFile);
+                showCurrentBadge();
+                showCustomAlert('✅ تم تعيين "' + badgeFile + '" كشارة لرتبة "' + rank + '"!', 'تم التعيين', 'success');
+            }
         }
 
         function loadPromotionsHistory() {
@@ -3296,13 +3571,16 @@
                             <p class="mb-1">${s.details}</p>
                             <small class="text-muted"><i class="fas fa-clock me-1"></i>${dateStr}</small>
                             ${s.adminResponse ? `<div class="mt-2 p-2 rounded bg-light small"><i class="fas fa-reply me-1"></i><strong>رد الإدارة:</strong> ${s.adminResponse}</div>` : ''}
-                            ${!s.adminResponse ? `
-                                <div class="mt-2">
+                            <div class="d-flex gap-2 mt-2 flex-wrap">
+                                ${!s.adminResponse ? `
                                     <button class="btn btn-sm btn-success" onclick="reviewSuggestion('${s.id}')">
-                                        <i class="fas fa-reply"></i> رد على الاقتراح
+                                        <i class="fas fa-reply"></i> رد
                                     </button>
-                                </div>
-                            ` : ''}
+                                ` : ''}
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSuggestion('${s.id}')" title="حذف الاقتراح">
+                                    <i class="fas fa-trash"></i> حذف
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -3316,8 +3594,8 @@
         }
 
         async function reviewSuggestion(id) {
-            const response = prompt('اكتب ردك على الاقتراح:');
-            if (response === null || !response.trim()) return;
+            const response = await showCustomPrompt('اكتب ردك على الاقتراح:', 'الرد على الاقتراح', 'أكتب رد الإدارة هنا...');
+            if (!response) return;
             
             const suggestions = JSON.parse(localStorage.getItem('suggestions') || '[]');
             const index = suggestions.findIndex(s => s.id === id);
@@ -3329,6 +3607,22 @@
             localStorage.setItem('suggestions', JSON.stringify(suggestions));
             loadAdminSuggestions();
             showCustomAlert('تم إرسال الرد بنجاح!', 'تم', 'success');
+        }
+
+        async function deleteSuggestion(id) {
+            const confirm = await showCustomConfirm('هل أنت متأكد من حذف هذا الاقتراح؟ لا يمكن التراجع عن هذا الإجراء.', 'حذف الاقتراح');
+            if (!confirm) return;
+            
+            const suggestions = JSON.parse(localStorage.getItem('suggestions') || '[]');
+            const filtered = suggestions.filter(s => s.id !== id);
+            localStorage.setItem('suggestions', JSON.stringify(filtered));
+            
+            if (typeof saveToFirestore === 'function') {
+                saveToFirestore('suggestions', filtered);
+            }
+            
+            loadAdminSuggestions();
+            showCustomAlert('تم حذف الاقتراح بنجاح!', 'تم الحذف', 'success');
         }
 
         function loadAllSideRanks() {

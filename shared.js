@@ -65,6 +65,64 @@ window.showCustomAlert = function(message, title = 'تنبيه', type = 'info') 
     });
 };
 
+window.showCustomPrompt = function(message, title = 'إدخال', placeholder = 'أكتب هنا...') {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            z-index: 10000; display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.3s ease;
+        `;
+
+        overlay.innerHTML = `
+            <div style="background: white; border-radius: 20px; overflow: hidden; width: 90%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.4s ease;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; text-align: center;">
+                    <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; backdrop-filter: blur(5px);">
+                        <i class="fas fa-pen" style="color: white; font-size: 28px;"></i>
+                    </div>
+                    <h4 style="margin: 0; color: white; font-weight: 700; font-size: 1.2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">${title}</h4>
+                </div>
+                <div style="padding: 25px;">
+                    <p style="margin: 0 0 20px 0; color: #495057; font-size: 1rem; text-align: center; font-weight: 500;">${message}</p>
+                    <textarea id="customPromptInput" rows="3" style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 1rem; font-family: 'Cairo', sans-serif; resize: vertical; transition: all 0.3s ease; outline: none; background: #f8f9fa; text-align: right;" placeholder="${placeholder}" onfocus="this.style.borderColor='#667eea'; this.style.background='white'" onblur="this.style.borderColor='#e9ecef'; this.style.background='#f8f9fa'"></textarea>
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+                        <button class="prompt-submit" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; font-family: 'Cairo', sans-serif;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 15px rgba(102,126,234,0.3)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                            <i class="fas fa-check me-1"></i> إرسال
+                        </button>
+                        <button class="prompt-cancel" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; font-family: 'Cairo', sans-serif;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 15px rgba(231,76,60,0.3)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                            <i class="fas fa-times me-1"></i> إلغاء
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        const input = overlay.querySelector('#customPromptInput');
+        setTimeout(() => input.focus(), 300);
+
+        overlay.querySelector('.prompt-submit').addEventListener('click', () => {
+            const val = input.value.trim();
+            overlay.remove();
+            resolve(val);
+        });
+        overlay.querySelector('.prompt-cancel').addEventListener('click', () => {
+            overlay.remove();
+            resolve(null);
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const val = input.value.trim();
+                overlay.remove();
+                resolve(val);
+            }
+        });
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); resolve(null); } });
+    });
+};
+
 window.showCustomConfirm = function(message, title = 'تأكيد') {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
